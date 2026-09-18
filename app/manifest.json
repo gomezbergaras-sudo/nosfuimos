@@ -1,0 +1,26 @@
+{
+  "name": "Nos Fuimos",
+  "short_name": "Nos Fuimos",
+  "description": "Tu destino en buenas manos. Reserva tu vehículo privado de Caracas a cualquier ciudad de Venezuela.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#002252",
+  "theme_color": "#002252",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

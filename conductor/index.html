@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#002252">
+<title>Nos Fuimos — Conductores</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../app/assets/icon-192.png">
+<link rel="icon" href="../app/assets/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Marca Nos Fuimos: azul marino del logo, azul eléctrico y verde lima */
+    --azul:#002252; --azul2:#0B3A8A; --celeste:#0093F8; --cian:#00C6FF;
+    --naranja:#0093F8; --naranja2:#00C6FF;           /* acento principal (antes naranja) */
+    --lima:#7ED321; --lima2:#B4F02C;
+    --fondo:#F2F6FC; --card:#FFFFFF; --texto:#0F1F3D; --gris:#6B7280; --linea:#E3E8F0;
+    --verde:#16A34A; --rojo:#DC2626; --amarillo:#D97706; --radio:16px;
+    --sombra:0 6px 20px rgba(0,34,82,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--fondo);color:var(--texto);-webkit-font-smoothing:antialiased}
+  #app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--fondo);position:relative}
+  .pantalla{display:none;flex:1;flex-direction:column;padding-bottom:84px;animation:fade .2s ease}
+  .pantalla.activa{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* cabecera */
+  .cab{background:linear-gradient(160deg,#002252 0%,#062F74 100%);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 22px;border-radius:0 0 28px 28px}
+  .cab h1{font-size:22px;font-weight:800;letter-spacing:-.2px}
+  .cab p{opacity:.85;font-size:14px;margin-top:2px}
+  .cab.simple{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-radius:0 0 22px 22px}
+  .cab .atras{background:rgba(255,255,255,.14);border:0;color:#fff;width:38px;height:38px;border-radius:12px;font-size:20px;cursor:pointer;display:grid;place-items:center}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .logo img{height:44px;display:block}
+  .logo b{font-size:20px;font-weight:800}
+
+  .contenido{padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card);border-radius:var(--radio);padding:16px;box-shadow:var(--sombra)}
+  .card h3{font-size:15px;font-weight:800;margin-bottom:10px;color:var(--azul)}
+  label{display:block;font-size:13px;font-weight:700;color:var(--gris);margin:8px 0 5px}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--linea);border-radius:12px;background:#fff;color:var(--texto);outline:none;transition:border .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--naranja)}
+  textarea{min-height:90px;resize:vertical}
+  .fila{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;transition:transform .1s,opacity .15s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.p{background:linear-gradient(90deg,var(--celeste),var(--cian));color:#fff;box-shadow:0 8px 20px rgba(0,147,248,.3)}
+  .btn.s{background:#fff;color:var(--azul);border:1.5px solid var(--linea)}
+  .btn.peligro{background:#FEF2F2;color:var(--rojo);border:1.5px solid #FECACA}
+  .btn.link{background:none;color:var(--azul2);padding:8px;font-weight:700;box-shadow:none}
+  .btn.chico{padding:10px 14px;font-size:14px;width:auto;border-radius:10px}
+  .stepper{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--linea);border-radius:12px;padding:6px 6px 6px 14px;background:#fff}
+  .stepper b{font-size:18px}
+  .stepper button{width:36px;height:36px;border-radius:10px;border:0;background:var(--fondo);font-size:20px;font-weight:800;color:var(--celeste);cursor:pointer}
+  .aviso{padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.4}
+  .aviso.error{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .aviso.ok{background:#F1FBE6;color:#2F6B00;border:1px solid #C9EE9A}
+  .aviso.info{background:#EFF6FF;color:#1E3A8A;border:1px solid #BFDBFE}
+  .muted{color:var(--gris);font-size:13px}
+  .centro{text-align:center}
+  .sep{height:1px;background:var(--linea);margin:10px 0}
+
+  /* vehículos */
+  .veh{display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--linea);border-radius:var(--radio);background:#fff;cursor:pointer;transition:border .15s,box-shadow .15s}
+  .veh.sel{border-color:var(--celeste);box-shadow:0 0 0 4px rgba(0,147,248,.14)}
+  .veh.no{opacity:.5;cursor:not-allowed}
+  .veh .ic{font-size:36px;width:52px;text-align:center}
+  .veh .info{flex:1}
+  .veh .info b{font-size:16px;display:block}
+  .veh .info small{color:var(--gris);font-size:12.5px;display:block;margin-top:2px}
+  .veh .precio{text-align:right}
+  .veh .precio b{font-size:22px;color:var(--azul);display:block;font-weight:800}
+  .veh .precio small{color:var(--gris);font-size:11px}
+
+  /* resumen */
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--linea);font-size:14.5px}
+  .kv:last-child{border:0}
+  .kv span:first-child{color:var(--gris)}
+  .kv b{text-align:right}
+  .total{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-size:18px;font-weight:800}
+  .total b{font-size:26px;color:var(--celeste)}
+
+  /* confirmación */
+  .exito{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 20px 10px;gap:10px}
+  .exito .check{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--lima),#3CCF4E);color:#fff;font-size:44px;display:grid;place-items:center;box-shadow:0 10px 30px rgba(126,211,33,.35);animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .codigo{font-size:34px;font-weight:800;letter-spacing:3px;color:var(--azul);background:#fff;padding:12px 24px;border-radius:14px;border:2px dashed var(--celeste)}
+
+  /* viajes */
+  .tabs{display:flex;background:#fff;border-radius:12px;padding:4px;box-shadow:var(--sombra)}
+  .tabs button{flex:1;border:0;background:none;padding:10px;border-radius:9px;font:inherit;font-weight:700;color:var(--gris);cursor:pointer}
+  .tabs button.on{background:var(--azul);color:#fff}
+  .viaje{display:flex;flex-direction:column;gap:8px;cursor:pointer}
+  .viaje .ruta{font-size:16px;font-weight:800}
+  .viaje .ruta span{color:var(--celeste)}
+  .viaje .meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--gris)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800}
+  .badge.pendiente_pago{background:#FEF3C7;color:#92400E}
+  .badge.confirmada{background:#DBEAFE;color:#1E40AF}
+  .badge.asignada{background:#E0E7FF;color:#3730A3}
+  .badge.en_camino,.badge.en_curso{background:#D1FAE5;color:#065F46}
+  .badge.completada{background:#F3F4F6;color:#374151}
+  .badge.cancelada_cliente,.badge.cancelada_admin,.badge.no_show{background:#FEE2E2;color:#991B1B}
+  .timeline{display:flex;flex-direction:column;gap:0;padding-left:6px}
+  .paso{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:16px}
+  .paso:before{content:"";position:absolute;left:7px;top:18px;bottom:0;width:2px;background:var(--linea)}
+  .paso:last-child:before{display:none}
+  .paso .pt{width:16px;height:16px;border-radius:50%;background:var(--linea);flex-shrink:0;margin-top:2px}
+  .paso.hecho .pt{background:var(--lima)}
+  .paso.actual .pt{background:var(--celeste);box-shadow:0 0 0 4px rgba(0,147,248,.2)}
+  .paso b{font-size:14px;display:block}
+  .paso small{color:var(--gris);font-size:12px}
+  .conductor{display:flex;gap:14px;align-items:center}
+  .conductor .avatar{width:56px;height:56px;border-radius:50%;background:var(--azul2);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:800}
+  .estrellas{display:flex;gap:6px;justify-content:center;font-size:36px;cursor:pointer}
+  .estrellas span{color:#D1D5DB;transition:transform .1s}
+  .estrellas span.on{color:#F59E0B}
+  .estrellas span:active{transform:scale(1.2)}
+
+  /* metodos de pago */
+  .metodo{display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--linea);border-radius:12px;background:#fff;cursor:pointer}
+  .metodo.sel{border-color:var(--celeste)}
+  .metodo .ic{font-size:22px}
+  .datos-pago{background:var(--fondo);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.7}
+  .copiar{float:right;font-size:12px;color:var(--azul2);font-weight:700;cursor:pointer}
+
+  /* nav */
+  nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--linea);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:10}
+  nav button{flex:1;border:0;background:none;font:inherit;font-size:11px;font-weight:700;color:var(--gris);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  nav button i{font-style:normal;font-size:22px}
+  nav button.on{color:var(--celeste)}
+  nav.oculta{display:none}
+
+  /* auth */
+  .auth-cab{background:#002252;color:#fff;padding:calc(30px + env(safe-area-inset-top)) 24px 26px;border-radius:0 0 36px 36px;text-align:center}
+  .auth-cab img{width:min(78%,320px);display:block;margin:0 auto}
+  .auth-cab p{opacity:.8;margin-top:4px;font-size:13.5px;letter-spacing:.5px}
+
+  .cargando{position:fixed;inset:0;background:rgba(244,246,250,.7);display:none;place-items:center;z-index:50;backdrop-filter:blur(2px)}
+  .cargando.on{display:grid}
+  .spinner{width:44px;height:44px;border:4px solid var(--linea);border-top-color:var(--celeste);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:700;box-shadow:var(--sombra);z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
+  .toast.on{opacity:1}
+  .vacio{text-align:center;padding:40px 20px;color:var(--gris)}
+  .vacio i{font-style:normal;font-size:48px;display:block;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--fondo);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+
+  /* --- conductor --- */
+  .pasos{display:flex;gap:6px;margin-top:6px}
+  .pp{flex:1;text-align:center;font-size:12px;font-weight:800;padding:7px 4px;border-radius:9px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
+  .pp.on{background:var(--lima);color:#002252}
+  .opciones{display:flex;gap:8px}
+  .op{flex:1;padding:11px;border:1.5px solid var(--linea);border-radius:12px;background:#fff;font:inherit;font-weight:700;color:var(--gris);cursor:pointer}
+  .op.on{border-color:var(--celeste);color:var(--azul);background:#EAF5FF}
+  .doc{display:flex;gap:12px;align-items:center;padding:12px;border:1.5px solid var(--linea);border-radius:14px;background:#fff}
+  .doc-ico{font-size:26px;width:36px;text-align:center}
+  .doc b{font-size:14px}
+  .btn.chico{white-space:nowrap}
+  .fila .btn{width:100%}
+  .kv b a{text-decoration:none;margin-left:4px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ================= AUTH ================= -->
+  <section class="pantalla" id="p-auth">
+    <div class="auth-cab">
+      <img src="../app/assets/logo-oscuro.jpg" alt="Nos Fuimos — Tu destino en buenas manos">
+      <p>Portal de conductores</p>
+    </div>
+    <div class="contenido">
+      <div class="card" id="auth-login">
+        <h3>Iniciar sesión</h3>
+        <label>Correo</label><input type="email" id="li-email" placeholder="tu@correo.com" autocomplete="email">
+        <label>Contraseña</label><input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password">
+        <div id="li-msg"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="login()">Entrar</button>
+        <button class="btn link" onclick="recuperar()">¿Olvidaste tu contraseña?</button>
+        <div class="sep"></div>
+        <p class="centro muted">¿Quieres manejar con Nos Fuimos?</p>
+        <button class="btn s" style="margin-top:8px" onclick="mostrarAuth('registro')">Registrarme como conductor</button>
+      </div>
+      <div class="card" id="auth-registro" style="display:none">
+        <h3>Crear cuenta de conductor</h3>
+        <p class="muted" style="margin-bottom:6px">Paso 1 de 4 · Después completarás tus datos, tu vehículo y tus documentos.</p>
+        <div class="fila">
+          <div><label>Nombre</label><input id="rg-nombre" placeholder="Carlos"></div>
+          <div><label>Apellido</label><input id="rg-apellido" placeholder="Rodríguez"></div>
+        </div>
+        <label>Teléfono</label><input type="tel" id="rg-tel" placeholder="0414-1234567">
+        <label>Correo</label><input type="email" id="rg-email" placeholder="tu@correo.com">
+        <label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="rg-pass" autocomplete="new-password">
+        <div id="rg-msg"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="registrar()">Crear cuenta y continuar</button>
+        <button class="btn link" onclick="mostrarAuth('login')">Ya tengo cuenta</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REGISTRO DE CONDUCTOR (wizard) ================= -->
+  <section class="pantalla" id="p-registro">
+    <div class="cab"><div class="logo"><img src="../app/assets/isotipo.jpg" alt="" style="border-radius:12px"><b>Registro de conductor</b></div>
+      <div class="pasos"><div class="pp" id="pp1">1 Datos</div><div class="pp" id="pp2">2 Vehículo</div><div class="pp" id="pp3">3 Documentos</div></div></div>
+    <div class="contenido">
+
+      <!-- paso 1 -->
+      <div id="reg-1">
+        <div class="card">
+          <h3>Tus datos</h3>
+          <label>Nombre completo *</label><input id="c-nombre">
+          <div class="fila">
+            <div><label>Cédula *</label><input id="c-cedula" placeholder="V-12345678"></div>
+            <div><label>Teléfono *</label><input type="tel" id="c-tel" placeholder="0414-1234567"></div>
+          </div>
+          <div class="fila">
+            <div><label>Fecha de nacimiento</label><input type="date" id="c-nac"></div>
+            <div><label>Años de experiencia</label><input type="number" id="c-exp" min="0" max="60" inputmode="numeric"></div>
+          </div>
+          <label>Ciudad donde vives</label><select id="c-ciudad"></select>
+          <label>Dirección</label><input id="c-dir" placeholder="Urbanización, calle, referencia">
+          <div class="fila">
+            <div><label>Grado de licencia *</label><select id="c-lic"><option value="5ta">5ta</option><option value="4ta">4ta</option><option value="3ra">3ra</option></select></div>
+            <div><label>Vence la licencia</label><input type="date" id="c-licv"></div>
+          </div>
+          <div id="c-msg1" style="margin-top:8px"></div>
+        </div>
+        <button class="btn p" style="margin-top:14px" onclick="regPaso(2)">Siguiente: mi vehículo →</button>
+      </div>
+
+      <!-- paso 2 -->
+      <div id="reg-2" style="display:none">
+        <div class="card">
+          <h3>Tu vehículo</h3>
+          <label>Tipo de vehículo *</label><select id="v-tipo"></select>
+          <div class="fila">
+            <div><label>Marca *</label><input id="v-marca" placeholder="Toyota"></div>
+            <div><label>Modelo *</label><input id="v-modelo" placeholder="Corolla"></div>
+          </div>
+          <div class="fila">
+            <div><label>Año *</label><input type="number" id="v-anio" min="1995" max="2030" inputmode="numeric" placeholder="2019"></div>
+            <div><label>Color</label><input id="v-color" placeholder="Gris"></div>
+          </div>
+          <div class="fila">
+            <div><label>Placa *</label><input id="v-placa" placeholder="AB123CD" style="text-transform:uppercase"></div>
+            <div><label>Puestos para pasajeros *</label><input type="number" id="v-cap" min="1" max="20" inputmode="numeric" placeholder="4"></div>
+          </div>
+          <div class="fila">
+            <div><label>Condición general *</label><select id="v-cond"><option value="excelente">Excelente</option><option value="buena" selected>Buena</option><option value="regular">Regular</option></select></div>
+            <div><label>Kilometraje</label><input type="number" id="v-km" min="0" inputmode="numeric" placeholder="85000"></div>
+          </div>
+          <label>Aire acondicionado</label>
+          <div class="opciones"><button class="op on" data-v="true" onclick="opAA(this)">Sí, funciona</button><button class="op" data-v="false" onclick="opAA(this)">No</button></div>
+          <label>Vence la póliza RCV</label><input type="date" id="v-rcv">
+          <label>Observaciones (opcional)</label><textarea id="v-notas" placeholder="Ej: cauchos nuevos, silla para bebé, rines..."></textarea>
+          <div id="c-msg2" style="margin-top:8px"></div>
+        </div>
+        <div class="fila" style="margin-top:14px"><button class="btn s" onclick="regPaso(1)">← Atrás</button><button class="btn p" onclick="enviarRegistro()">Guardar y subir documentos →</button></div>
+      </div>
+
+      <!-- paso 3 -->
+      <div id="reg-3" style="display:none">
+        <div class="aviso info">Sube una foto clara o PDF de cada documento (máx. 10 MB). Puedes tomar la foto con la cámara.</div>
+        <div id="docs-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div id="c-msg3"></div>
+        <button class="btn p" style="margin-top:6px" onclick="terminarRegistro()">Enviar solicitud</button>
+        <p class="centro muted">Puedes enviar la solicitud y completar documentos faltantes después.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ESTADO DE LA SOLICITUD ================= -->
+  <section class="pantalla" id="p-estado">
+    <div class="cab"><div class="logo"><img src="../app/assets/isotipo.jpg" alt="" style="border-radius:12px"><b>Nos Fuimos</b></div><h1 id="es-titulo"></h1><p id="es-sub"></p></div>
+    <div class="contenido">
+      <div id="es-aviso"></div>
+      <div class="card"><h3>Mis documentos</h3><div id="es-docs" style="display:flex;flex-direction:column;gap:10px"></div></div>
+      <div class="card"><h3>Mi vehículo</h3><div id="es-veh"></div><button class="btn s chico" style="margin-top:10px" onclick="editarRegistro()">Editar datos</button></div>
+      <button class="btn peligro" onclick="salir()">Cerrar sesión</button>
+    </div>
+  </section>
+
+  <!-- ================= VIAJES (conductor aprobado) ================= -->
+  <section class="pantalla" id="p-viajes">
+    <div class="cab"><div class="logo"><img src="../app/assets/isotipo.jpg" alt="" style="border-radius:12px"><b>Nos Fuimos</b></div><h1 id="saludo">Mis viajes</h1><p>Tu destino en buenas manos</p></div>
+    <div class="contenido">
+      <div class="tabs">
+        <button class="on" onclick="tabViajes('hoy',this)">Hoy</button>
+        <button onclick="tabViajes('proximos',this)">Próximos</button>
+        <button onclick="tabViajes('historial',this)">Historial</button>
+      </div>
+      <div id="vj-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </section>
+
+  <!-- ================= DETALLE DEL VIAJE ================= -->
+  <section class="pantalla" id="p-detalle">
+    <div class="cab simple"><button class="atras" onclick="ir('viajes')">‹</button><div><h1 id="d-codigo"></h1><p id="d-ruta"></p></div></div>
+    <div class="contenido" id="d-contenido"></div>
+  </section>
+
+  <!-- ================= PERFIL ================= -->
+  <section class="pantalla" id="p-perfil">
+    <div class="cab"><h1>Mi perfil</h1><p id="pf-sub"></p></div>
+    <div class="contenido">
+      <div class="card" id="pf-resumen"></div>
+      <div class="card"><h3>Mi vehículo</h3><div id="pf-veh"></div></div>
+      <div class="card"><h3>Mis documentos</h3><div id="pf-docs" style="display:flex;flex-direction:column;gap:10px"></div></div>
+      <button class="btn peligro" onclick="salir()">Cerrar sesión</button>
+      <p class="centro muted">Nos Fuimos · Conductores · v1.0</p>
+    </div>
+  </section>
+
+  <nav id="nav" class="oculta">
+    <button data-p="viajes" onclick="ir('viajes')"><i>🧭</i>Viajes</button>
+    <button data-p="perfil" onclick="ir('perfil')"><i>👤</i>Perfil</button>
+  </nav>
+</div>
+<input type="file" id="file-input" accept="image/*,application/pdf" style="display:none">
+<div class="cargando" id="cargando"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../shared/supabase.js"></script>
+<script>
+/* =====================================================================
+   NOS FUIMOS — App del conductor
+   Registro con vehículo y documentos, revisión por el admin, viajes
+   asignados y cambio de estados. Toda la lógica de negocio vive en la
+   base de datos (RPC); esta app solo muestra y envía.
+   ===================================================================== */
+const estado = { perfil: null, ficha: null, ciudades: [], tipos: [], tab: 'hoy', viajes: [], aa: true, subiendo: null };
+const ESTADOS = {
+  asignada: 'Asignado', en_camino: 'En camino al cliente', en_curso: 'En viaje', completada: 'Completado',
+  cancelada_cliente: 'Cancelado por el cliente', cancelada_admin: 'Cancelado', no_show: 'Cliente no se presentó',
+  confirmada: 'Confirmado', pendiente_pago: 'Pendiente',
+};
+const ESTADO_DOC = { pendiente: ['🕐 En revisión', '#FEF3C7', '#92400E'], aprobado: ['✓ Aprobado', '#F1FBE6', '#2F6B00'], rechazado: ['✗ Rechazado', '#FEE2E2', '#991B1B'], vencido: ['⚠ Vencido', '#FEE2E2', '#991B1B'] };
+const METODOS = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia', zelle: 'Zelle', efectivo: 'EFECTIVO (cobrar al cliente)', tarjeta: 'Tarjeta', otro: 'Otro' };
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function cargando(on) { $('cargando').classList.toggle('on', !!on); }
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2800); }
+function msg(id, texto, tipo = 'error') { $(id).innerHTML = texto ? `<div class="aviso ${tipo}">${esc(texto)}</div>` : ''; }
+function fechaBonita(f) { if (!f) return ''; const [y, m, d] = f.split('-'); return new Date(y, m - 1, d).toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short' }); }
+function horaBonita(h) { if (!h) return ''; const [H, M] = h.split(':'); const n = +H; return `${n % 12 || 12}:${M} ${n < 12 ? 'am' : 'pm'}`; }
+function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+async function guardado(fn, idMsg) {
+  cargando(true);
+  try { return await fn(); }
+  catch (e) { console.error(e); if (idMsg) msg(idMsg, e.message); else toast(e.message); }
+  finally { cargando(false); }
+}
+
+/* ---------- navegación ---------- */
+function ir(p) {
+  document.querySelectorAll('.pantalla').forEach(s => s.classList.remove('activa'));
+  $('p-' + p).classList.add('activa');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  $('nav').classList.toggle('oculta', !(estado.ficha && estado.ficha.conductor.estado === 'aprobado' && ['viajes', 'perfil', 'detalle'].includes(p)));
+  window.scrollTo(0, 0);
+  if (p === 'viajes') cargarViajes();
+  if (p === 'perfil') pintarPerfil();
+}
+function mostrarAuth(cual) { $('auth-login').style.display = cual === 'login' ? '' : 'none'; $('auth-registro').style.display = cual === 'registro' ? '' : 'none'; }
+
+/* ---------- auth ---------- */
+async function login() {
+  const email = $('li-email').value.trim(), password = $('li-pass').value;
+  if (!email || !password) return msg('li-msg', 'Escribe tu correo y contraseña');
+  await guardado(async () => {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message.includes('Invalid') ? 'Correo o contraseña incorrectos' : error.message);
+    await entrar();
+  }, 'li-msg');
+}
+async function registrar() {
+  const nombre = $('rg-nombre').value.trim(), apellido = $('rg-apellido').value.trim(), telefono = $('rg-tel').value.trim(), email = $('rg-email').value.trim(), password = $('rg-pass').value;
+  if (!nombre || !telefono || !email || password.length < 6) return msg('rg-msg', 'Completa nombre, teléfono, correo y una contraseña de al menos 6 caracteres');
+  await guardado(async () => {
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { nombre, apellido } } });
+    if (error) throw new Error(error.message.includes('already') ? 'Ese correo ya está registrado. Inicia sesión.' : error.message);
+    if (!data.session) { msg('rg-msg', 'Te enviamos un correo para confirmar tu cuenta. Ábrelo y luego inicia sesión para continuar el registro.', 'ok'); return; }
+    await sb.from('perfiles').update({ telefono }).eq('id', data.user.id);
+    await entrar();
+  }, 'rg-msg');
+}
+async function recuperar() {
+  const email = $('li-email').value.trim();
+  if (!email) return msg('li-msg', 'Escribe tu correo arriba y vuelve a pulsar');
+  await guardado(async () => { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] }); if (error) throw error; msg('li-msg', 'Te enviamos un enlace para cambiar tu contraseña.', 'ok'); }, 'li-msg');
+}
+async function salir() { await sb.auth.signOut(); estado.perfil = null; estado.ficha = null; $('nav').classList.add('oculta'); ir('auth'); }
+
+async function entrar() {
+  estado.perfil = await NF.perfil();
+  if (!estado.perfil) throw new Error('No se pudo cargar tu perfil');
+  if (estado.perfil.rol === 'admin') throw new Error('Esta cuenta es de administrador. Usa el panel admin.');
+  const [c, t] = await Promise.all([
+    sb.from('ciudades').select('id,nombre').eq('activa', true).order('orden'),
+    sb.from('tipos_vehiculo').select('*').eq('activo', true).order('orden'),
+  ]);
+  estado.ciudades = c.data || []; estado.tipos = t.data || [];
+  await cargarFicha();
+  decidirPantalla();
+}
+async function cargarFicha() { estado.ficha = await NF.rpc('mi_ficha_conductor'); }
+function decidirPantalla() {
+  const f = estado.ficha;
+  if (!f) { prepararRegistro(); regPaso(1); ir('registro'); return; }
+  if (f.conductor.estado === 'aprobado') { $('saludo').textContent = `Hola, ${f.conductor.nombre.split(' ')[0]}`; ir('viajes'); return; }
+  pintarEstado(); ir('estado');
+}
+
+/* ---------- registro: wizard ---------- */
+function prepararRegistro() {
+  const p = estado.perfil, f = estado.ficha;
+  $('c-ciudad').innerHTML = estado.ciudades.map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+  $('v-tipo').innerHTML = estado.tipos.map(x => `<option value="${x.id}">${x.icono || ''} ${esc(x.nombre)} (hasta ${x.capacidad_pasajeros})</option>`).join('');
+  const c = f ? f.conductor : {}, v = f ? (f.vehiculo || {}) : {};
+  $('c-nombre').value = c.nombre || `${p.nombre || ''} ${p.apellido || ''}`.trim();
+  $('c-cedula').value = c.cedula || p.cedula || ''; $('c-tel').value = c.telefono || p.telefono || '';
+  $('c-nac').value = c.fecha_nacimiento || ''; $('c-exp').value = c.anios_experiencia ?? '';
+  if (c.ciudad_base_id) $('c-ciudad').value = c.ciudad_base_id; $('c-dir').value = c.direccion || '';
+  $('c-lic').value = c.licencia_grado || '5ta'; $('c-licv').value = c.licencia_vence || '';
+  if (v.tipo_vehiculo_id) $('v-tipo').value = v.tipo_vehiculo_id;
+  $('v-marca').value = v.marca || ''; $('v-modelo').value = v.modelo || ''; $('v-anio').value = v.anio || ''; $('v-color').value = v.color || '';
+  $('v-placa').value = v.placa || ''; $('v-cap').value = v.capacidad_pasajeros || ''; $('v-cond').value = v.condicion || 'buena';
+  $('v-km').value = v.kilometraje ?? ''; $('v-rcv').value = v.rcv_vence || ''; $('v-notas').value = v.notas || '';
+  estado.aa = v.aire_acondicionado !== false; document.querySelectorAll('.op').forEach(b => b.classList.toggle('on', (b.dataset.v === 'true') === estado.aa));
+  $('v-tipo').onchange = () => { const t = estado.tipos.find(x => x.id === +$('v-tipo').value); if (t && !$('v-cap').value) $('v-cap').value = t.capacidad_pasajeros; };
+}
+function opAA(btn) { estado.aa = btn.dataset.v === 'true'; document.querySelectorAll('.op').forEach(b => b.classList.toggle('on', b === btn)); }
+function regPaso(n) {
+  if (n === 2) {
+    if (!$('c-nombre').value.trim() || !$('c-cedula').value.trim() || !$('c-tel').value.trim()) return msg('c-msg1', 'Nombre, cédula y teléfono son obligatorios');
+    msg('c-msg1', '');
+  }
+  [1, 2, 3].forEach(i => { $('reg-' + i).style.display = i === n ? '' : 'none'; $('pp' + i).classList.toggle('on', i <= n); });
+  if (n === 3) pintarDocs('docs-lista');
+  window.scrollTo(0, 0);
+}
+async function enviarRegistro() {
+  const v = { tipo_vehiculo_id: +$('v-tipo').value, marca: $('v-marca').value.trim(), modelo: $('v-modelo').value.trim(), anio: +$('v-anio').value || null, color: $('v-color').value.trim() || null, placa: $('v-placa').value.trim().toUpperCase(), capacidad_pasajeros: +$('v-cap').value || null, aire_acondicionado: estado.aa, condicion: $('v-cond').value, kilometraje: +$('v-km').value || null, rcv_vence: $('v-rcv').value || null, notas: $('v-notas').value.trim() || null };
+  if (!v.marca || !v.modelo || !v.placa || !v.anio || !v.capacidad_pasajeros) return msg('c-msg2', 'Marca, modelo, año, placa y puestos son obligatorios');
+  const d = { nombre: $('c-nombre').value.trim(), cedula: $('c-cedula').value.trim(), telefono: $('c-tel').value.trim(), email: estado.perfil.email, fecha_nacimiento: $('c-nac').value || null, anios_experiencia: +$('c-exp').value || null, ciudad_base_id: +$('c-ciudad').value || null, direccion: $('c-dir').value.trim() || null, licencia: $('c-lic').value, licencia_grado: $('c-lic').value, licencia_vence: $('c-licv').value || null };
+  await guardado(async () => {
+    await NF.rpc('registrar_conductor', { p_datos: d, p_vehiculo: v });
+    await cargarFicha(); msg('c-msg2', ''); regPaso(3); toast('Datos guardados. Ahora sube tus documentos.');
+  }, 'c-msg2');
+}
+function terminarRegistro() {
+  const req = (estado.ficha.requisitos || []).filter(r => r.obligatorio);
+  const faltan = req.filter(r => !estado.ficha.documentos.find(d => d.tipo === r.tipo));
+  if (faltan.length && !confirm(`Faltan ${faltan.length} documento(s) obligatorio(s): ${faltan.map(x => x.nombre).join(', ')}.\n\n¿Enviar de todas formas? Podrás subirlos después.`)) return;
+  pintarEstado(); ir('estado'); toast('¡Solicitud enviada! Te avisaremos cuando sea revisada.');
+}
+function editarRegistro() { prepararRegistro(); regPaso(1); ir('registro'); }
+
+/* ---------- documentos ---------- */
+function pintarDocs(idContenedor) {
+  const f = estado.ficha; if (!f) return;
+  const req = f.requisitos || [];
+  $(idContenedor).innerHTML = req.map(r => {
+    const d = f.documentos.find(x => x.tipo === r.tipo);
+    const e = d ? ESTADO_DOC[d.estado] : null;
+    return `<div class="doc">
+      <div class="doc-ico">${d ? (d.estado === 'aprobado' ? '✅' : d.estado === 'pendiente' ? '🕐' : '⚠️') : '📄'}</div>
+      <div style="flex:1"><b>${esc(r.nombre)}</b>${r.obligatorio ? '' : ' <small class="muted">(opcional)</small>'}<br>
+        ${d ? `<span class="chip" style="background:${e[1]};color:${e[2]}">${e[0]}</span> <small class="muted">${esc(d.nombre_archivo || '')}${d.vence_el ? ' · vence ' + fechaBonita(d.vence_el) : ''}</small>${d.observacion ? `<br><small style="color:var(--rojo)">${esc(d.observacion)}</small>` : ''}` : '<small class="muted">Sin subir</small>'}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${d ? `<button class="btn s chico" onclick="verDoc('${d.archivo_path}')">Ver</button>` : ''}
+        ${!d || d.estado !== 'aprobado' ? `<button class="btn p chico" onclick="subirDoc('${r.tipo}', ${r.vence})">${d ? 'Reemplazar' : 'Subir'}</button>` : ''}
+      </div></div>`;
+  }).join('');
+}
+function subirDoc(tipo, vence) {
+  estado.subiendo = { tipo, vence };
+  const inp = $('file-input'); inp.value = ''; inp.click();
+}
+$('file-input').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file || !estado.subiendo) return;
+  if (file.size > 10 * 1024 * 1024) return toast('El archivo supera 10 MB');
+  let vence = null;
+  if (estado.subiendo.vence) { vence = prompt('¿Hasta qué fecha está vigente? (AAAA-MM-DD)', ''); if (vence === null) return; vence = vence.trim() || null; if (vence && !/^\d{4}-\d{2}-\d{2}$/.test(vence)) return toast('Formato de fecha inválido, usa AAAA-MM-DD'); }
+  await guardado(async () => {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${estado.perfil.id}/${estado.subiendo.tipo}_${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from('documentos').upload(path, file, { upsert: false, contentType: file.type || undefined });
+    if (error) throw new Error('No se pudo subir el archivo: ' + error.message);
+    await NF.rpc('registrar_documento', { p_tipo: estado.subiendo.tipo, p_archivo_path: path, p_nombre_archivo: file.name, p_vence_el: vence });
+    await cargarFicha();
+    ['docs-lista', 'es-docs', 'pf-docs'].forEach(id => { if ($(id)) pintarDocs(id); });
+    toast('Documento subido');
+  });
+});
+async function verDoc(path) {
+  await guardado(async () => {
+    const { data, error } = await sb.storage.from('documentos').createSignedUrl(path, 300);
+    if (error) throw error; window.open(data.signedUrl, '_blank');
+  });
+}
+
+/* ---------- estado de la solicitud ---------- */
+function pintarEstado() {
+  const c = estado.ficha.conductor, v = estado.ficha.vehiculo;
+  const t = { pendiente: ['Solicitud en revisión', 'Nuestro equipo está verificando tus datos y documentos. Normalmente toma 24–48 h.', 'info'],
+              rechazado: ['Solicitud rechazada', 'Revisa la observación, corrige lo indicado y vuelve a subir los documentos.', 'error'],
+              suspendido: ['Cuenta suspendida', 'Comunícate con soporte para más información.', 'error'] }[c.estado] || ['Solicitud', '', 'info'];
+  $('es-titulo').textContent = t[0]; $('es-sub').textContent = c.nombre;
+  $('es-aviso').innerHTML = `<div class="aviso ${t[2]}">${esc(t[1])}${c.observacion_admin ? `<br><br><b>Observación:</b> ${esc(c.observacion_admin)}` : ''}</div>`;
+  pintarDocs('es-docs');
+  $('es-veh').innerHTML = v ? vehiculoHTML(v) : '<p class="muted">Sin vehículo registrado</p>';
+}
+function vehiculoHTML(v) {
+  const t = estado.tipos.find(x => x.id === v.tipo_vehiculo_id) || {};
+  return `<div class="kv"><span>Vehículo</span><b>${t.icono || ''} ${esc(v.marca)} ${esc(v.modelo)} ${v.anio || ''}</b></div>
+    <div class="kv"><span>Placa</span><b>${esc(v.placa)}</b></div>
+    <div class="kv"><span>Tipo / puestos</span><b>${esc(t.nombre || '')} · ${v.capacidad_pasajeros}</b></div>
+    <div class="kv"><span>Color</span><b>${esc(v.color || '—')}</b></div>
+    <div class="kv"><span>Condición</span><b>${esc(v.condicion || '—')}${v.aire_acondicionado ? ' · A/A' : ' · sin A/A'}${v.kilometraje ? ' · ' + v.kilometraje.toLocaleString('es-VE') + ' km' : ''}</b></div>
+    ${v.rcv_vence ? `<div class="kv"><span>RCV vence</span><b>${fechaBonita(v.rcv_vence)}</b></div>` : ''}`;
+}
+
+/* ---------- viajes ---------- */
+function tabViajes(t, btn) { estado.tab = t; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b === btn)); pintarViajes(); }
+async function cargarViajes() { await guardado(async () => { estado.viajes = await NF.rpc('mis_viajes_conductor'); pintarViajes(); }); }
+function pintarViajes() {
+  const hoy = hoyISO(), t = estado.tab, activos = ['asignada', 'en_camino', 'en_curso'];
+  const lista = estado.viajes.filter(v => t === 'hoy' ? (v.fecha_viaje === hoy && activos.includes(v.estado)) || ['en_camino', 'en_curso'].includes(v.estado)
+    : t === 'proximos' ? v.fecha_viaje > hoy && activos.includes(v.estado)
+    : !activos.includes(v.estado));
+  if (t === 'historial') lista.reverse();
+  $('vj-lista').innerHTML = lista.length ? lista.map(v => `
+    <div class="card viaje" onclick="verDetalle('${v.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="badge ${v.estado}">${ESTADOS[v.estado]}</span><b class="muted">${esc(v.codigo)}</b></div>
+      <div class="ruta">${esc(v.origen)} <span>→</span> ${esc(v.destino)}</div>
+      <div class="meta"><span>📅 ${fechaBonita(v.fecha_viaje)} · <b>${horaBonita(v.hora_viaje)}</b></span><span>👥 ${v.pasajeros} · 🧳 ${v.equipaje}</span></div>
+      ${v.direccion_recogida ? `<div class="muted">📍 ${esc(v.direccion_recogida)}</div>` : ''}
+    </div>`).join('')
+    : `<div class="vacio"><i>${t === 'historial' ? '📖' : '🛣️'}</i>${t === 'hoy' ? 'No tienes viajes para hoy.' : t === 'proximos' ? 'No tienes viajes próximos asignados.' : 'Aún no tienes historial.'}</div>`;
+}
+function verDetalle(id) {
+  const v = estado.viajes.find(x => x.id === id); if (!v) return;
+  $('d-codigo').textContent = v.codigo; $('d-ruta').textContent = `${v.origen} → ${v.destino}`;
+  const mapa = q => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  const acciones = {
+    asignada: `<button class="btn p" onclick="cambiar('${v.id}','en_camino')">🚗 Voy en camino al cliente</button>`,
+    en_camino: `<button class="btn p" onclick="cambiar('${v.id}','en_curso')">▶ Iniciar viaje (cliente a bordo)</button><button class="btn peligro" style="margin-top:8px" onclick="cambiar('${v.id}','no_show')">Cliente no se presentó</button>`,
+    en_curso: `<button class="btn p" onclick="cambiar('${v.id}','completada')">🏁 Viaje completado</button>`,
+  }[v.estado] || '';
+  $('d-contenido').innerHTML = `
+    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Estado</h3><span class="badge ${v.estado}">${ESTADOS[v.estado]}</span></div>
+      ${acciones ? `<div style="margin-top:14px">${acciones}</div>` : ''}</div>
+    <div class="card"><h3>Cliente</h3><div class="conductor"><div class="avatar">${esc((v.cliente.nombre || '?')[0])}</div><div style="flex:1"><b style="font-size:16px">${esc(v.cliente.nombre)}</b><br><small class="muted">${esc(v.cliente.telefono || '')}</small></div>
+      ${v.cliente.telefono ? `<a class="btn p chico" style="text-decoration:none" href="tel:${esc(v.cliente.telefono)}">📞</a><a class="btn s chico" style="text-decoration:none" target="_blank" href="https://wa.me/${esc((v.cliente.telefono || '').replace(/\D/g, '').replace(/^0/, '58'))}">💬</a>` : ''}</div></div>
+    <div class="card"><h3>El viaje</h3>
+      <div class="kv"><span>Salida</span><b>${fechaBonita(v.fecha_viaje)} · ${horaBonita(v.hora_viaje)}</b></div>
+      <div class="kv"><span>Pasajeros / maletas</span><b>${v.pasajeros} / ${v.equipaje}</b></div>
+      ${v.direccion_recogida ? `<div class="kv"><span>Recogida</span><b>${esc(v.direccion_recogida)} <a href="${mapa(v.direccion_recogida + ', ' + v.origen)}" target="_blank">🗺️</a></b></div>` : ''}
+      ${v.direccion_destino ? `<div class="kv"><span>Llegada</span><b>${esc(v.direccion_destino)} <a href="${mapa(v.direccion_destino + ', ' + v.destino)}" target="_blank">🗺️</a></b></div>` : ''}
+      ${v.notas ? `<div class="kv"><span>Notas</span><b>${esc(v.notas)}</b></div>` : ''}
+      <div class="kv"><span>Viajan</span><b>${v.lista_pasajeros.map(p => esc(p.nombre)).join(', ') || '—'}</b></div>
+      <div class="kv"><span>Pago</span><b>${v.metodo_pago === 'efectivo' ? '<span style="color:var(--rojo)">' + METODOS.efectivo + ' · ' + NF.dinero(v.precio_total) + '</span>' : (METODOS[v.metodo_pago] || 'Pagado en la app')}</b></div>
+    </div>`;
+  ir('detalle');
+}
+async function cambiar(id, nuevo) {
+  if (nuevo === 'no_show' && !confirm('¿Confirmas que el cliente no se presentó?')) return;
+  await guardado(async () => {
+    await NF.rpc('cambiar_estado_viaje', { p_reserva_id: id, p_estado: nuevo });
+    toast({ en_camino: 'Avisamos al cliente que vas en camino', en_curso: '¡Buen viaje!', completada: '¡Viaje completado!', no_show: 'Registrado' }[nuevo]);
+    await cargarViajes(); if (nuevo === 'completada' || nuevo === 'no_show') ir('viajes'); else verDetalle(id);
+  });
+}
+
+/* ---------- perfil ---------- */
+function pintarPerfil() {
+  const c = estado.ficha.conductor, v = estado.ficha.vehiculo;
+  $('pf-sub').textContent = estado.perfil.email || '';
+  $('pf-resumen').innerHTML = `<div class="conductor"><div class="avatar">${esc(c.nombre[0])}</div><div><b style="font-size:17px">${esc(c.nombre)}</b><br><small class="muted">⭐ ${c.calificacion} · ${c.total_viajes} viajes · ${esc(c.telefono)}</small><br><span class="chip" style="background:#F1FBE6;color:#2F6B00;margin-top:6px">✓ Conductor aprobado</span></div></div>`;
+  $('pf-veh').innerHTML = v ? vehiculoHTML(v) : '<p class="muted">Sin vehículo</p>';
+  pintarDocs('pf-docs');
+}
+
+/* ---------- arranque ---------- */
+(async function init() {
+  cargando(true);
+  try {
+    sb.auth.onAuthStateChange(async (evento) => {
+      if (evento === 'PASSWORD_RECOVERY') { const nueva = prompt('Escribe tu nueva contraseña (mínimo 6 caracteres):'); if (nueva && nueva.length >= 6) { await sb.auth.updateUser({ password: nueva }); toast('Contraseña actualizada'); } }
+    });
+    const s = await NF.sesion();
+    if (s) await entrar(); else ir('auth');
+  } catch (e) { console.error(e); toast(e.message); ir('auth'); }
+  finally { cargando(false); }
+})();
+
+</script>
+</body>
+</html>

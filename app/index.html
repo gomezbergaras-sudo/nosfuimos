@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#002252">
+<title>Nos Fuimos — Viajes privados desde Caracas</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="icon" href="assets/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Marca Nos Fuimos: azul marino del logo, azul eléctrico y verde lima */
+    --azul:#002252; --azul2:#0B3A8A; --celeste:#0093F8; --cian:#00C6FF;
+    --naranja:#0093F8; --naranja2:#00C6FF;           /* acento principal (antes naranja) */
+    --lima:#7ED321; --lima2:#B4F02C;
+    --fondo:#F2F6FC; --card:#FFFFFF; --texto:#0F1F3D; --gris:#6B7280; --linea:#E3E8F0;
+    --verde:#16A34A; --rojo:#DC2626; --amarillo:#D97706; --radio:16px;
+    --sombra:0 6px 20px rgba(0,34,82,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--fondo);color:var(--texto);-webkit-font-smoothing:antialiased}
+  #app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--fondo);position:relative}
+  .pantalla{display:none;flex:1;flex-direction:column;padding-bottom:84px;animation:fade .2s ease}
+  .pantalla.activa{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* cabecera */
+  .cab{background:linear-gradient(160deg,#002252 0%,#062F74 100%);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 22px;border-radius:0 0 28px 28px}
+  .cab h1{font-size:22px;font-weight:800;letter-spacing:-.2px}
+  .cab p{opacity:.85;font-size:14px;margin-top:2px}
+  .cab.simple{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-radius:0 0 22px 22px}
+  .cab .atras{background:rgba(255,255,255,.14);border:0;color:#fff;width:38px;height:38px;border-radius:12px;font-size:20px;cursor:pointer;display:grid;place-items:center}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .logo img{height:44px;display:block}
+  .logo b{font-size:20px;font-weight:800}
+
+  .contenido{padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card);border-radius:var(--radio);padding:16px;box-shadow:var(--sombra)}
+  .card h3{font-size:15px;font-weight:800;margin-bottom:10px;color:var(--azul)}
+  label{display:block;font-size:13px;font-weight:700;color:var(--gris);margin:8px 0 5px}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--linea);border-radius:12px;background:#fff;color:var(--texto);outline:none;transition:border .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--naranja)}
+  textarea{min-height:90px;resize:vertical}
+  .fila{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;transition:transform .1s,opacity .15s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.p{background:linear-gradient(90deg,var(--celeste),var(--cian));color:#fff;box-shadow:0 8px 20px rgba(0,147,248,.3)}
+  .btn.s{background:#fff;color:var(--azul);border:1.5px solid var(--linea)}
+  .btn.peligro{background:#FEF2F2;color:var(--rojo);border:1.5px solid #FECACA}
+  .btn.link{background:none;color:var(--azul2);padding:8px;font-weight:700;box-shadow:none}
+  .btn.chico{padding:10px 14px;font-size:14px;width:auto;border-radius:10px}
+  .stepper{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--linea);border-radius:12px;padding:6px 6px 6px 14px;background:#fff}
+  .stepper b{font-size:18px}
+  .stepper button{width:36px;height:36px;border-radius:10px;border:0;background:var(--fondo);font-size:20px;font-weight:800;color:var(--celeste);cursor:pointer}
+  .aviso{padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.4}
+  .aviso.error{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .aviso.ok{background:#F1FBE6;color:#2F6B00;border:1px solid #C9EE9A}
+  .aviso.info{background:#EFF6FF;color:#1E3A8A;border:1px solid #BFDBFE}
+  .muted{color:var(--gris);font-size:13px}
+  .centro{text-align:center}
+  .sep{height:1px;background:var(--linea);margin:10px 0}
+
+  /* vehículos */
+  .veh{display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--linea);border-radius:var(--radio);background:#fff;cursor:pointer;transition:border .15s,box-shadow .15s}
+  .veh.sel{border-color:var(--celeste);box-shadow:0 0 0 4px rgba(0,147,248,.14)}
+  .veh.no{opacity:.5;cursor:not-allowed}
+  .veh .ic{font-size:36px;width:52px;text-align:center}
+  .veh .info{flex:1}
+  .veh .info b{font-size:16px;display:block}
+  .veh .info small{color:var(--gris);font-size:12.5px;display:block;margin-top:2px}
+  .veh .precio{text-align:right}
+  .veh .precio b{font-size:22px;color:var(--azul);display:block;font-weight:800}
+  .veh .precio small{color:var(--gris);font-size:11px}
+
+  /* resumen */
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--linea);font-size:14.5px}
+  .kv:last-child{border:0}
+  .kv span:first-child{color:var(--gris)}
+  .kv b{text-align:right}
+  .total{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-size:18px;font-weight:800}
+  .total b{font-size:26px;color:var(--celeste)}
+
+  /* confirmación */
+  .exito{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 20px 10px;gap:10px}
+  .exito .check{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--lima),#3CCF4E);color:#fff;font-size:44px;display:grid;place-items:center;box-shadow:0 10px 30px rgba(126,211,33,.35);animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .codigo{font-size:34px;font-weight:800;letter-spacing:3px;color:var(--azul);background:#fff;padding:12px 24px;border-radius:14px;border:2px dashed var(--celeste)}
+
+  /* viajes */
+  .tabs{display:flex;background:#fff;border-radius:12px;padding:4px;box-shadow:var(--sombra)}
+  .tabs button{flex:1;border:0;background:none;padding:10px;border-radius:9px;font:inherit;font-weight:700;color:var(--gris);cursor:pointer}
+  .tabs button.on{background:var(--azul);color:#fff}
+  .viaje{display:flex;flex-direction:column;gap:8px;cursor:pointer}
+  .viaje .ruta{font-size:16px;font-weight:800}
+  .viaje .ruta span{color:var(--celeste)}
+  .viaje .meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--gris)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800}
+  .badge.pendiente_pago{background:#FEF3C7;color:#92400E}
+  .badge.confirmada{background:#DBEAFE;color:#1E40AF}
+  .badge.asignada{background:#E0E7FF;color:#3730A3}
+  .badge.en_camino,.badge.en_curso{background:#D1FAE5;color:#065F46}
+  .badge.completada{background:#F3F4F6;color:#374151}
+  .badge.cancelada_cliente,.badge.cancelada_admin,.badge.no_show{background:#FEE2E2;color:#991B1B}
+  .timeline{display:flex;flex-direction:column;gap:0;padding-left:6px}
+  .paso{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:16px}
+  .paso:before{content:"";position:absolute;left:7px;top:18px;bottom:0;width:2px;background:var(--linea)}
+  .paso:last-child:before{display:none}
+  .paso .pt{width:16px;height:16px;border-radius:50%;background:var(--linea);flex-shrink:0;margin-top:2px}
+  .paso.hecho .pt{background:var(--lima)}
+  .paso.actual .pt{background:var(--celeste);box-shadow:0 0 0 4px rgba(0,147,248,.2)}
+  .paso b{font-size:14px;display:block}
+  .paso small{color:var(--gris);font-size:12px}
+  .conductor{display:flex;gap:14px;align-items:center}
+  .conductor .avatar{width:56px;height:56px;border-radius:50%;background:var(--azul2);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:800}
+  .estrellas{display:flex;gap:6px;justify-content:center;font-size:36px;cursor:pointer}
+  .estrellas span{color:#D1D5DB;transition:transform .1s}
+  .estrellas span.on{color:#F59E0B}
+  .estrellas span:active{transform:scale(1.2)}
+
+  /* metodos de pago */
+  .metodo{display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid var(--linea);border-radius:12px;background:#fff;cursor:pointer}
+  .metodo.sel{border-color:var(--celeste)}
+  .metodo .ic{font-size:22px}
+  .datos-pago{background:var(--fondo);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.7}
+  .copiar{float:right;font-size:12px;color:var(--azul2);font-weight:700;cursor:pointer}
+
+  /* nav */
+  nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--linea);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:10}
+  nav button{flex:1;border:0;background:none;font:inherit;font-size:11px;font-weight:700;color:var(--gris);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  nav button i{font-style:normal;font-size:22px}
+  nav button.on{color:var(--celeste)}
+  nav.oculta{display:none}
+
+  /* auth */
+  .auth-cab{background:#002252;color:#fff;padding:calc(30px + env(safe-area-inset-top)) 24px 26px;border-radius:0 0 36px 36px;text-align:center}
+  .auth-cab img{width:min(78%,320px);display:block;margin:0 auto}
+  .auth-cab p{opacity:.8;margin-top:4px;font-size:13.5px;letter-spacing:.5px}
+
+  .cargando{position:fixed;inset:0;background:rgba(244,246,250,.7);display:none;place-items:center;z-index:50;backdrop-filter:blur(2px)}
+  .cargando.on{display:grid}
+  .spinner{width:44px;height:44px;border:4px solid var(--linea);border-top-color:var(--celeste);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:700;box-shadow:var(--sombra);z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
+  .toast.on{opacity:1}
+  .vacio{text-align:center;padding:40px 20px;color:var(--gris)}
+  .vacio i{font-style:normal;font-size:48px;display:block;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--fondo);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ================= AUTH ================= -->
+  <section class="pantalla" id="p-auth">
+    <div class="auth-cab">
+      <img src="assets/logo-oscuro.jpg" alt="Nos Fuimos — Tu destino en buenas manos">
+      <p>Reserva tu vehículo privado, de Caracas a donde vayas</p>
+    </div>
+    <div class="contenido">
+      <div class="card" id="auth-login">
+        <h3>Iniciar sesión</h3>
+        <label>Correo</label><input type="email" id="li-email" placeholder="tu@correo.com" autocomplete="email">
+        <label>Contraseña</label><input type="password" id="li-pass" placeholder="••••••••" autocomplete="current-password">
+        <div id="li-msg"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="login()">Entrar</button>
+        <button class="btn link" onclick="recuperar()">¿Olvidaste tu contraseña?</button>
+        <div class="sep"></div>
+        <p class="centro muted">¿Primera vez aquí?</p>
+        <button class="btn s" style="margin-top:8px" onclick="mostrarAuth('registro')">Crear cuenta</button>
+      </div>
+
+      <div class="card" id="auth-registro" style="display:none">
+        <h3>Crear cuenta</h3>
+        <div class="fila">
+          <div><label>Nombre</label><input id="rg-nombre" placeholder="Ana" autocomplete="given-name"></div>
+          <div><label>Apellido</label><input id="rg-apellido" placeholder="Pérez" autocomplete="family-name"></div>
+        </div>
+        <label>Teléfono</label><input type="tel" id="rg-tel" placeholder="0414-1234567" autocomplete="tel">
+        <label>Correo</label><input type="email" id="rg-email" placeholder="tu@correo.com" autocomplete="email">
+        <label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="rg-pass" autocomplete="new-password">
+        <div id="rg-msg"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="registrar()">Registrarme</button>
+        <button class="btn link" onclick="mostrarAuth('login')">Ya tengo cuenta</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INICIO / RESERVAR ================= -->
+  <section class="pantalla" id="p-inicio">
+    <div class="cab">
+      <div class="logo"><img src="assets/isotipo.jpg" alt="" style="border-radius:12px"><b>Nos Fuimos</b></div>
+      <h1 id="saludo">¡Hola!</h1>
+      <p>Tu destino en buenas manos. Reserva el vehículo completo, sin compartir.</p>
+    </div>
+    <div class="contenido">
+      <div class="card">
+        <label>Origen</label>
+        <select id="f-origen"></select>
+        <label>Destino</label>
+        <select id="f-destino"></select>
+        <div class="fila">
+          <div><label>Fecha</label><input type="date" id="f-fecha"></div>
+          <div><label>Hora de salida</label><input type="time" id="f-hora" value="07:00"></div>
+        </div>
+        <div class="fila">
+          <div><label>Pasajeros</label>
+            <div class="stepper"><b id="f-pax">2</b><div><button onclick="step('pax',-1)">−</button> <button onclick="step('pax',1)">+</button></div></div>
+          </div>
+          <div><label>Maletas grandes</label>
+            <div class="stepper"><b id="f-eq">1</b><div><button onclick="step('eq',-1)">−</button> <button onclick="step('eq',1)">+</button></div></div>
+          </div>
+        </div>
+        <div id="f-msg" style="margin-top:10px"></div>
+        <div style="height:14px"></div>
+        <button class="btn p" onclick="verPrecios()">Ver vehículos y precios →</button>
+      </div>
+      <p class="centro muted">Precio total por vehículo. Sin cargos ocultos.</p>
+    </div>
+  </section>
+
+  <!-- ================= VEHÍCULOS ================= -->
+  <section class="pantalla" id="p-vehiculos">
+    <div class="cab simple"><button class="atras" onclick="ir('inicio')">‹</button><div><h1>Elige tu vehículo</h1><p id="v-sub"></p></div></div>
+    <div class="contenido">
+      <div id="v-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button class="btn p" id="v-continuar" disabled onclick="irResumen()">Continuar</button>
+    </div>
+  </section>
+
+  <!-- ================= RESUMEN / DATOS ================= -->
+  <section class="pantalla" id="p-resumen">
+    <div class="cab simple"><button class="atras" onclick="ir('vehiculos')">‹</button><div><h1>Confirma tu viaje</h1><p>Revisa los datos antes de reservar</p></div></div>
+    <div class="contenido">
+      <div class="card"><h3>Resumen</h3><div id="r-resumen"></div></div>
+      <div class="card">
+        <h3>Direcciones</h3>
+        <label>Punto de recogida (origen)</label><input id="r-recogida" placeholder="Ej: Altamira, frente al C.C. ...">
+        <label>Dirección de llegada (destino)</label><input id="r-llegada" placeholder="Ej: Urb. La Viña, calle ...">
+        <label>Notas para el conductor (opcional)</label><textarea id="r-notas" placeholder="Silla para bebé, mascota, parada breve..."></textarea>
+      </div>
+      <div class="card">
+        <h3>Pasajeros</h3>
+        <p class="muted" style="margin-bottom:8px">Nombre de cada persona que viaja (para el conductor).</p>
+        <div id="r-pasajeros"></div>
+      </div>
+      <div class="card">
+        <h3>Cupón de descuento</h3>
+        <div style="display:flex;gap:8px"><input id="r-cupon" placeholder="Ej: BIENVENIDO10" style="text-transform:uppercase"><button class="btn s chico" onclick="aplicarCupon()">Aplicar</button></div>
+        <div id="r-cupon-msg" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <div class="total"><span>Total a pagar</span><b id="r-total"></b></div>
+        <p class="muted" id="r-desc"></p>
+        <div id="r-msg" style="margin-top:8px"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="confirmarReserva()">Reservar ahora</button>
+        <p class="centro muted" style="margin-top:10px" id="r-politica"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PAGO ================= -->
+  <section class="pantalla" id="p-pago">
+    <div class="cab simple"><button class="atras" onclick="ir('viajes')">‹</button><div><h1>Pago</h1><p id="pg-sub"></p></div></div>
+    <div class="contenido">
+      <div class="aviso info">Tu reserva está creada. Realiza el pago y reporta la referencia; nuestro equipo la verifica y te confirma el viaje.</div>
+      <div class="card">
+        <h3>Método de pago</h3>
+        <div id="pg-metodos" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="pg-datos" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h3>Reportar pago</h3>
+        <label>Número de referencia / confirmación</label><input id="pg-ref" placeholder="Ej: 123456">
+        <label>Monto pagado (USD)</label><input type="number" id="pg-monto" step="0.01" inputmode="decimal">
+        <div id="pg-msg" style="margin-top:8px"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="reportarPago()">Enviar comprobante</button>
+        <button class="btn link" onclick="ir('viajes')">Pagar más tarde</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONFIRMACIÓN ================= -->
+  <section class="pantalla" id="p-exito">
+    <div class="contenido" style="padding-top:40px">
+      <div class="exito">
+        <div class="check">✓</div>
+        <h2 id="ex-titulo">¡Reserva creada!</h2>
+        <p class="muted" id="ex-texto">Guarda tu código de reserva</p>
+        <div class="codigo" id="ex-codigo">NF-XXXXXX</div>
+        <div id="ex-detalle" style="width:100%;margin-top:6px"></div>
+      </div>
+      <button class="btn p" onclick="verDetalle(estado.reservaActual)">Ver mi reserva</button>
+      <button class="btn s" onclick="ir('inicio')">Volver al inicio</button>
+    </div>
+  </section>
+
+  <!-- ================= MIS VIAJES ================= -->
+  <section class="pantalla" id="p-viajes">
+    <div class="cab"><h1>Mis viajes</h1><p>Próximos, en curso e historial</p></div>
+    <div class="contenido">
+      <div class="tabs">
+        <button class="on" onclick="tabViajes('proximos',this)">Próximos</button>
+        <button onclick="tabViajes('curso',this)">En curso</button>
+        <button onclick="tabViajes('historial',this)">Historial</button>
+      </div>
+      <div id="vj-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </section>
+
+  <!-- ================= DETALLE ================= -->
+  <section class="pantalla" id="p-detalle">
+    <div class="cab simple"><button class="atras" onclick="ir('viajes')">‹</button><div><h1 id="d-codigo">NF-</h1><p id="d-ruta"></p></div></div>
+    <div class="contenido" id="d-contenido"></div>
+  </section>
+
+  <!-- ================= SOPORTE ================= -->
+  <section class="pantalla" id="p-soporte">
+    <div class="cab"><h1>Soporte</h1><p>Estamos para ayudarte</p></div>
+    <div class="contenido">
+      <a id="sp-wa" class="btn p" style="text-decoration:none" target="_blank">💬 Escribir por WhatsApp</a>
+      <div class="card">
+        <h3>Abrir un caso</h3>
+        <label>Reserva relacionada (opcional)</label><select id="sp-reserva"><option value="">— Ninguna —</option></select>
+        <label>Asunto</label><input id="sp-asunto" placeholder="Ej: Cambio de hora">
+        <label>Mensaje</label><textarea id="sp-msg" placeholder="Cuéntanos qué necesitas"></textarea>
+        <div id="sp-alert" style="margin-top:8px"></div>
+        <div style="height:12px"></div>
+        <button class="btn s" onclick="enviarTicket()">Enviar</button>
+      </div>
+      <div class="card"><h3>Mis casos</h3><div id="sp-lista"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= PERFIL ================= -->
+  <section class="pantalla" id="p-perfil">
+    <div class="cab"><h1>Mi perfil</h1><p id="pf-email"></p></div>
+    <div class="contenido">
+      <div class="card">
+        <div class="fila">
+          <div><label>Nombre</label><input id="pf-nombre"></div>
+          <div><label>Apellido</label><input id="pf-apellido"></div>
+        </div>
+        <label>Teléfono</label><input type="tel" id="pf-tel">
+        <label>Cédula</label><input id="pf-cedula" placeholder="V-12345678">
+        <div id="pf-msg" style="margin-top:8px"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="guardarPerfil()">Guardar cambios</button>
+      </div>
+      <div class="card">
+        <h3>Política de cancelación</h3>
+        <div id="pf-politica" class="muted"></div>
+      </div>
+      <button class="btn peligro" onclick="salir()">Cerrar sesión</button>
+      <p class="centro muted">Nos Fuimos · Tu destino en buenas manos · v1.1</p>
+    </div>
+  </section>
+
+  <nav id="nav" class="oculta">
+    <button data-p="inicio" onclick="ir('inicio')"><i>🚗</i>Reservar</button>
+    <button data-p="viajes" onclick="ir('viajes')"><i>🧭</i>Mis viajes</button>
+    <button data-p="soporte" onclick="ir('soporte')"><i>💬</i>Soporte</button>
+    <button data-p="perfil" onclick="ir('perfil')"><i>👤</i>Perfil</button>
+  </nav>
+</div>
+
+<div class="cargando" id="cargando"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../shared/supabase.js"></script>
+<script>
+/* =====================================================================
+   NOS FUIMOS — App del cliente
+   Todo el precio y las validaciones viven en la base de datos (RPC);
+   esta app solo muestra y envía.
+   ===================================================================== */
+const estado = {
+  perfil: null, ciudades: [], rutas: [], config: {}, politicas: [],
+  busqueda: null, cotizacion: [], vehiculo: null,
+  cupon: { codigo: '', descuento: 0, msg: '' },
+  reservaActual: null, tabViajes: 'proximos', reservas: [],
+  estrellas: 0,
+};
+const ESTADOS = {
+  pendiente_pago: 'Pendiente de pago', confirmada: 'Confirmada', asignada: 'Conductor asignado',
+  en_camino: 'Conductor en camino', en_curso: 'En viaje', completada: 'Completado',
+  cancelada_cliente: 'Cancelada', cancelada_admin: 'Cancelada por Nos Fuimos', no_show: 'No se presentó',
+};
+const METODOS = {
+  pago_movil: { n: 'Pago Móvil', i: '📱' }, transferencia: { n: 'Transferencia bancaria', i: '🏦' },
+  zelle: { n: 'Zelle', i: '💵' }, efectivo: { n: 'Efectivo al conductor', i: '💰' },
+  tarjeta: { n: 'Tarjeta', i: '💳' }, otro: { n: 'Otro', i: '📝' },
+};
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function cargando(on) { $('cargando').classList.toggle('on', !!on); }
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2600); }
+function msg(id, texto, tipo = 'error') { $(id).innerHTML = texto ? `<div class="aviso ${tipo}">${esc(texto)}</div>` : ''; }
+function fechaBonita(f) { const [y, m, d] = f.split('-'); return new Date(y, m - 1, d).toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+function horaBonita(h) { const [H, M] = h.split(':'); const n = +H; return `${n % 12 || 12}:${M} ${n < 12 ? 'am' : 'pm'}`; }
+function fechaHora(ts) { return new Date(ts).toLocaleString('es-VE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); }
+function hoyISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+async function guardado(fn, idMsg) {
+  cargando(true);
+  try { return await fn(); }
+  catch (e) { console.error(e); if (idMsg) msg(idMsg, e.message); else toast(e.message); }
+  finally { cargando(false); }
+}
+
+/* ---------- navegación ---------- */
+function ir(p) {
+  document.querySelectorAll('.pantalla').forEach(s => s.classList.remove('activa'));
+  $('p-' + p).classList.add('activa');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  window.scrollTo(0, 0);
+  if (p === 'viajes') cargarViajes();
+  if (p === 'soporte') cargarSoporte();
+  if (p === 'perfil') cargarPerfil();
+}
+function mostrarAuth(cual) {
+  $('auth-login').style.display = cual === 'login' ? '' : 'none';
+  $('auth-registro').style.display = cual === 'registro' ? '' : 'none';
+}
+
+/* ---------- auth ---------- */
+async function login() {
+  const email = $('li-email').value.trim(), password = $('li-pass').value;
+  if (!email || !password) return msg('li-msg', 'Escribe tu correo y contraseña');
+  await guardado(async () => {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message.includes('Invalid') ? 'Correo o contraseña incorrectos' : error.message);
+    await entrar();
+  }, 'li-msg');
+}
+async function registrar() {
+  const nombre = $('rg-nombre').value.trim(), apellido = $('rg-apellido').value.trim(),
+        telefono = $('rg-tel').value.trim(), email = $('rg-email').value.trim(), password = $('rg-pass').value;
+  if (!nombre || !telefono || !email || password.length < 6) return msg('rg-msg', 'Completa nombre, teléfono, correo y una contraseña de al menos 6 caracteres');
+  await guardado(async () => {
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { nombre, apellido } } });
+    if (error) throw new Error(error.message.includes('already') ? 'Ese correo ya está registrado' : error.message);
+    if (!data.session) { msg('rg-msg', 'Te enviamos un correo para confirmar tu cuenta. Ábrelo y luego inicia sesión.', 'ok'); return; }
+    await sb.from('perfiles').update({ telefono }).eq('id', data.user.id);
+    await entrar();
+  }, 'rg-msg');
+}
+async function recuperar() {
+  const email = $('li-email').value.trim();
+  if (!email) return msg('li-msg', 'Escribe tu correo arriba y vuelve a pulsar');
+  await guardado(async () => {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+    if (error) throw error;
+    msg('li-msg', 'Te enviamos un enlace para cambiar tu contraseña.', 'ok');
+  }, 'li-msg');
+}
+async function salir() { await sb.auth.signOut(); estado.perfil = null; $('nav').classList.add('oculta'); ir('auth'); }
+
+async function entrar() {
+  const perfil = await NF.perfil();
+  if (!perfil) throw new Error('No se pudo cargar tu perfil');
+  estado.perfil = perfil;
+  $('saludo').textContent = `¡Hola, ${perfil.nombre || 'viajero'}!`;
+  $('nav').classList.remove('oculta');
+  await cargarCatalogos();
+  ir('inicio');
+}
+
+/* ---------- catálogos ---------- */
+async function cargarCatalogos() {
+  const [c, r, cfg, pol] = await Promise.all([
+    sb.from('ciudades').select('*').eq('activa', true).order('orden'),
+    sb.from('rutas').select('origen_id,destino_id').eq('activa', true),
+    sb.from('configuracion').select('clave,valor').like('clave', 'publico.%'),
+    sb.from('politicas_cancelacion').select('*').eq('activa', true).order('horas_minimas', { ascending: false }),
+  ]);
+  estado.ciudades = c.data || []; estado.rutas = r.data || []; estado.politicas = pol.data || [];
+  estado.config = {}; (cfg.data || []).forEach(x => estado.config[x.clave.replace('publico.', '')] = x.valor);
+
+  const origenes = [...new Set(estado.rutas.map(x => x.origen_id))];
+  $('f-origen').innerHTML = estado.ciudades.filter(x => origenes.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+  actualizarDestinos();
+  $('f-origen').onchange = actualizarDestinos;
+  $('f-fecha').min = hoyISO();
+  if (!$('f-fecha').value) { const d = new Date(); d.setDate(d.getDate() + 1); $('f-fecha').value = d.toISOString().slice(0, 10); }
+  const wa = (estado.config.whatsapp_soporte || '').replace(/\D/g, '');
+  $('sp-wa').href = wa ? `https://wa.me/${wa}?text=${encodeURIComponent('Hola, necesito ayuda con mi reserva en Nos Fuimos')}` : '#';
+  $('r-politica').textContent = estado.politicas.length ? `Cancelación: ${estado.politicas[0].porcentaje_reembolso}% de reembolso si cancelas con más de ${estado.politicas[0].horas_minimas} h de anticipación.` : '';
+}
+function actualizarDestinos() {
+  const o = +$('f-origen').value;
+  const destinos = estado.rutas.filter(x => x.origen_id === o).map(x => x.destino_id);
+  $('f-destino').innerHTML = estado.ciudades.filter(x => destinos.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+}
+function step(cual, d) {
+  const el = $(cual === 'pax' ? 'f-pax' : 'f-eq');
+  const min = cual === 'pax' ? 1 : 0, max = cual === 'pax' ? 12 : 12;
+  el.textContent = Math.min(max, Math.max(min, +el.textContent + d));
+}
+
+/* ---------- 1. buscar / cotizar ---------- */
+async function verPrecios() {
+  const b = {
+    origen_id: +$('f-origen').value, destino_id: +$('f-destino').value,
+    fecha: $('f-fecha').value, hora: $('f-hora').value,
+    pasajeros: +$('f-pax').textContent, equipaje: +$('f-eq').textContent,
+  };
+  if (!b.origen_id || !b.destino_id) return msg('f-msg', 'Elige origen y destino');
+  if (!b.fecha || !b.hora) return msg('f-msg', 'Elige fecha y hora');
+  const cuando = new Date(`${b.fecha}T${b.hora}`);
+  const minH = +(estado.config.horas_anticipacion || 2);
+  if (cuando < new Date(Date.now() + minH * 3600e3)) return msg('f-msg', `Las reservas deben hacerse con al menos ${minH} horas de anticipación`);
+  msg('f-msg', '');
+  await guardado(async () => {
+    const data = await NF.rpc('cotizar', { p_origen_id: b.origen_id, p_destino_id: b.destino_id, p_pasajeros: b.pasajeros, p_equipaje: b.equipaje });
+    if (!data.length) throw new Error('No hay vehículos disponibles para esa ruta todavía');
+    estado.busqueda = b; estado.cotizacion = data; estado.vehiculo = null;
+    estado.cupon = { codigo: '', descuento: 0, msg: '' }; $('r-cupon').value = ''; $('r-cupon-msg').innerHTML = '';
+    pintarVehiculos(); ir('vehiculos');
+  }, 'f-msg');
+}
+const nombreCiudad = id => (estado.ciudades.find(c => c.id === id) || {}).nombre || '';
+function pintarVehiculos() {
+  const b = estado.busqueda, r = estado.cotizacion[0];
+  $('v-sub').textContent = `${nombreCiudad(b.origen_id)} → ${nombreCiudad(b.destino_id)} · ${fechaBonita(b.fecha)} ${horaBonita(b.hora)}` + (r.duracion_min ? ` · ~${Math.round(r.duracion_min / 60 * 10) / 10} h` : '');
+  $('v-lista').innerHTML = estado.cotizacion.map(v => `
+    <div class="veh ${v.disponible ? '' : 'no'} ${estado.vehiculo && estado.vehiculo.tipo_vehiculo_id === v.tipo_vehiculo_id ? 'sel' : ''}" onclick="elegirVehiculo(${v.tipo_vehiculo_id})">
+      <div class="ic">${v.icono || '🚗'}</div>
+      <div class="info"><b>${esc(v.nombre)}</b><small>${esc(v.descripcion || '')}</small>
+        <small>👥 hasta ${v.capacidad_pasajeros} · 🧳 ${v.capacidad_equipaje} maletas${v.disponible ? '' : ' · <span style="color:var(--rojo)">' + esc(v.motivo) + '</span>'}</small></div>
+      <div class="precio"><b>${NF.dinero(v.precio_total)}</b><small>total del vehículo</small></div>
+    </div>`).join('');
+  $('v-continuar').disabled = !estado.vehiculo;
+}
+function elegirVehiculo(id) {
+  const v = estado.cotizacion.find(x => x.tipo_vehiculo_id === id);
+  if (!v || !v.disponible) return toast(v ? v.motivo : 'No disponible');
+  estado.vehiculo = v; pintarVehiculos();
+}
+
+/* ---------- 2. resumen ---------- */
+function irResumen() {
+  const b = estado.busqueda, v = estado.vehiculo;
+  $('r-resumen').innerHTML = `
+    <div class="kv"><span>Ruta</span><b>${esc(nombreCiudad(b.origen_id))} → ${esc(nombreCiudad(b.destino_id))}</b></div>
+    <div class="kv"><span>Fecha y hora</span><b>${fechaBonita(b.fecha)} · ${horaBonita(b.hora)}</b></div>
+    <div class="kv"><span>Vehículo</span><b>${v.icono || ''} ${esc(v.nombre)}</b></div>
+    <div class="kv"><span>Pasajeros / maletas</span><b>${b.pasajeros} / ${b.equipaje}</b></div>
+    <div class="kv"><span>Precio del vehículo</span><b>${NF.dinero(v.precio_total)}</b></div>`;
+  const p = estado.perfil;
+  $('r-pasajeros').innerHTML = Array.from({ length: b.pasajeros }, (_, i) => `
+    <div class="fila" style="margin-bottom:8px">
+      <input class="px-nombre" placeholder="Pasajero ${i + 1}${i === 0 ? ' (titular)' : ''}" value="${i === 0 ? esc((p.nombre + ' ' + (p.apellido || '')).trim()) : ''}">
+      <input class="px-cedula" placeholder="Cédula (opcional)" value="${i === 0 ? esc(p.cedula || '') : ''}">
+    </div>`).join('');
+  pintarTotal(); msg('r-msg', ''); ir('resumen');
+}
+function pintarTotal() {
+  const v = estado.vehiculo, d = estado.cupon.descuento || 0;
+  $('r-total').textContent = NF.dinero(v.precio_total - d);
+  $('r-desc').textContent = d ? `Incluye descuento de ${NF.dinero(d)} (${estado.cupon.codigo})` : '';
+}
+async function aplicarCupon() {
+  const codigo = $('r-cupon').value.trim().toUpperCase();
+  if (!codigo) { estado.cupon = { codigo: '', descuento: 0 }; pintarTotal(); $('r-cupon-msg').innerHTML = ''; return; }
+  await guardado(async () => {
+    const [r] = await NF.rpc('validar_cupon', { p_codigo: codigo, p_monto: estado.vehiculo.precio_total });
+    if (!r.valido) { estado.cupon = { codigo: '', descuento: 0 }; pintarTotal(); return msg('r-cupon-msg', r.mensaje); }
+    estado.cupon = { codigo, descuento: +r.descuento }; pintarTotal();
+    msg('r-cupon-msg', `✓ ${r.mensaje}: −${NF.dinero(r.descuento)}`, 'ok');
+  });
+}
+async function confirmarReserva() {
+  const b = estado.busqueda, v = estado.vehiculo;
+  const nombres = [...document.querySelectorAll('.px-nombre')].map(x => x.value.trim());
+  const cedulas = [...document.querySelectorAll('.px-cedula')].map(x => x.value.trim());
+  if (!nombres[0]) return msg('r-msg', 'Escribe al menos el nombre del pasajero titular');
+  const pasajeros = nombres.map((n, i) => ({ nombre: n || `Pasajero ${i + 1}`, cedula: cedulas[i] || null, es_titular: i === 0 }));
+  await guardado(async () => {
+    const r = await NF.rpc('crear_reserva', {
+      p_origen_id: b.origen_id, p_destino_id: b.destino_id, p_tipo_vehiculo_id: v.tipo_vehiculo_id,
+      p_fecha: b.fecha, p_hora: b.hora, p_pasajeros: b.pasajeros, p_equipaje: b.equipaje,
+      p_direccion_recogida: $('r-recogida').value.trim() || null, p_direccion_destino: $('r-llegada').value.trim() || null,
+      p_notas: $('r-notas').value.trim() || null, p_cupon: estado.cupon.codigo || null, p_pasajeros_json: pasajeros,
+    });
+    estado.reservaActual = r.id;
+    $('ex-titulo').textContent = '¡Reserva creada!';
+    $('ex-texto').textContent = 'Guarda tu código. Ahora realiza el pago para confirmarla.';
+    $('ex-codigo').textContent = r.codigo;
+    $('ex-detalle').innerHTML = `<div class="card" style="text-align:left">
+      <div class="kv"><span>Ruta</span><b>${esc(nombreCiudad(b.origen_id))} → ${esc(nombreCiudad(b.destino_id))}</b></div>
+      <div class="kv"><span>Salida</span><b>${fechaBonita(b.fecha)} · ${horaBonita(b.hora)}</b></div>
+      <div class="kv"><span>Vehículo</span><b>${esc(v.nombre)}</b></div>
+      <div class="kv"><span>Total</span><b style="color:var(--naranja);font-size:18px">${NF.dinero(r.precio_total)}</b></div></div>
+      <button class="btn p" style="margin-top:12px" onclick="irPago('${r.id}')">Pagar ahora</button>`;
+    ir('exito');
+  }, 'r-msg');
+}
+
+/* ---------- 3. pago ---------- */
+let pagoCtx = { reserva: null, metodo: null };
+async function irPago(reservaId) {
+  await guardado(async () => {
+    const d = await NF.rpc('detalle_reserva', { p_reserva_id: reservaId });
+    pagoCtx = { reserva: d.reserva, metodo: null };
+    $('pg-sub').textContent = `${d.reserva.codigo} · ${NF.dinero(d.reserva.precio_total)}`;
+    $('pg-monto').value = d.reserva.precio_total; $('pg-ref').value = ''; msg('pg-msg', '');
+    const metodos = estado.config.metodos_pago || ['pago_movil', 'transferencia', 'zelle', 'efectivo'];
+    $('pg-metodos').innerHTML = metodos.map(m => `<div class="metodo" id="m-${m}" onclick="elegirMetodo('${m}')"><span class="ic">${METODOS[m]?.i || '📝'}</span><b>${METODOS[m]?.n || m}</b></div>`).join('');
+    $('pg-datos').innerHTML = '';
+    ir('pago');
+  });
+}
+function elegirMetodo(m) {
+  pagoCtx.metodo = m;
+  document.querySelectorAll('.metodo').forEach(x => x.classList.toggle('sel', x.id === 'm-' + m));
+  const datos = (estado.config.datos_pago || {})[m];
+  if (m === 'efectivo') { $('pg-datos').innerHTML = `<div class="aviso info">Pagarás en efectivo al conductor al iniciar el viaje. Escribe "EFECTIVO" como referencia para que el equipo confirme tu reserva.</div>`; $('pg-ref').value = 'EFECTIVO'; return; }
+  if (!datos) { $('pg-datos').innerHTML = `<div class="aviso info">Escríbenos por WhatsApp para recibir los datos de pago.</div>`; return; }
+  $('pg-datos').innerHTML = `<div class="datos-pago">${Object.entries(datos).map(([k, v]) => `<div><b>${esc(k.replace('_', ' '))}:</b> ${esc(v)} <span class="copiar" onclick="navigator.clipboard.writeText('${esc(v)}');toast('Copiado')">copiar</span></div>`).join('')}
+    <div style="margin-top:6px"><b>Monto:</b> ${NF.dinero(pagoCtx.reserva.precio_total)}</div></div>`;
+}
+async function reportarPago() {
+  if (!pagoCtx.metodo) return msg('pg-msg', 'Elige un método de pago');
+  const ref = $('pg-ref').value.trim(), monto = +$('pg-monto').value;
+  if (!ref || !(monto > 0)) return msg('pg-msg', 'Escribe la referencia y el monto');
+  await guardado(async () => {
+    await NF.rpc('registrar_pago', { p_reserva_id: pagoCtx.reserva.id, p_metodo: pagoCtx.metodo, p_referencia: ref, p_monto: monto });
+    estado.reservaActual = pagoCtx.reserva.id;
+    $('ex-titulo').textContent = '¡Pago reportado!';
+    $('ex-texto').textContent = 'Lo verificamos en breve y te confirmamos el viaje. Tu código:';
+    $('ex-codigo').textContent = pagoCtx.reserva.codigo;
+    $('ex-detalle').innerHTML = '';
+    ir('exito');
+  }, 'pg-msg');
+}
+
+/* ---------- 4. mis viajes ---------- */
+function tabViajes(t, btn) {
+  estado.tabViajes = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b === btn));
+  pintarViajes();
+}
+async function cargarViajes() {
+  await guardado(async () => {
+    const { data, error } = await sb.from('reservas')
+      .select('id,codigo,estado,fecha_viaje,hora_viaje,pasajeros,precio_total,ruta_id,rutas(origen:ciudades!rutas_origen_id_fkey(nombre),destino:ciudades!rutas_destino_id_fkey(nombre)),tipos_vehiculo(nombre,icono)')
+      .order('fecha_viaje', { ascending: false }).order('hora_viaje', { ascending: false });
+    if (error) throw error;
+    estado.reservas = data || []; pintarViajes();
+  });
+}
+function pintarViajes() {
+  const t = estado.tabViajes;
+  const lista = estado.reservas.filter(r =>
+    t === 'curso' ? ['en_camino', 'en_curso'].includes(r.estado) :
+    t === 'proximos' ? ['pendiente_pago', 'confirmada', 'asignada'].includes(r.estado) :
+    ['completada', 'cancelada_cliente', 'cancelada_admin', 'no_show'].includes(r.estado));
+  if (t === 'proximos') lista.sort((a, b) => (a.fecha_viaje + a.hora_viaje).localeCompare(b.fecha_viaje + b.hora_viaje));
+  $('vj-lista').innerHTML = lista.length ? lista.map(r => `
+    <div class="card viaje" onclick="verDetalle('${r.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="badge ${r.estado}">${ESTADOS[r.estado]}</span><b class="muted">${esc(r.codigo)}</b></div>
+      <div class="ruta">${esc(r.rutas.origen.nombre)} <span>→</span> ${esc(r.rutas.destino.nombre)}</div>
+      <div class="meta"><span>📅 ${fechaBonita(r.fecha_viaje)} · ${horaBonita(r.hora_viaje)}</span><span>${r.tipos_vehiculo.icono || ''} ${esc(r.tipos_vehiculo.nombre)} · <b>${NF.dinero(r.precio_total)}</b></span></div>
+      ${r.estado === 'pendiente_pago' ? `<button class="btn p chico" onclick="event.stopPropagation();irPago('${r.id}')">Pagar ahora</button>` : ''}
+    </div>`).join('') :
+    `<div class="vacio"><i>${t === 'historial' ? '📖' : '🛣️'}</i>${t === 'proximos' ? 'No tienes viajes próximos.<br><br><button class="btn p chico" onclick="ir(\'inicio\')">Reservar un viaje</button>' : t === 'curso' ? 'No tienes viajes en curso.' : 'Aún no tienes historial.'}</div>`;
+}
+
+/* ---------- 5. detalle ---------- */
+const ORDEN_ESTADOS = ['pendiente_pago', 'confirmada', 'asignada', 'en_camino', 'en_curso', 'completada'];
+async function verDetalle(id) {
+  await guardado(async () => {
+    const d = await NF.rpc('detalle_reserva', { p_reserva_id: id });
+    if (!d) throw new Error('Reserva no encontrada');
+    const r = d.reserva; estado.reservaActual = r.id; estado.estrellas = d.calificacion?.puntuacion || 0;
+    $('d-codigo').textContent = r.codigo; $('d-ruta').textContent = `${d.origen} → ${d.destino}`;
+    const cancelada = r.estado.startsWith('cancelada') || r.estado === 'no_show';
+    const idx = ORDEN_ESTADOS.indexOf(r.estado);
+    const hechos = new Set(d.historial.map(h => h.estado));
+    const timeline = cancelada
+      ? `<div class="aviso error"><b>${ESTADOS[r.estado]}</b>${r.motivo_cancelacion ? ' · ' + esc(r.motivo_cancelacion) : ''}${r.monto_reembolso > 0 ? `<br>Reembolso: ${NF.dinero(r.monto_reembolso)}` : ''}</div>`
+      : `<div class="timeline">${ORDEN_ESTADOS.map((e, i) => { const h = d.historial.filter(x => x.estado === e).pop(); return `
+          <div class="paso ${i < idx || (i === idx && e === 'completada') ? 'hecho' : i === idx ? 'actual' : ''}"><div class="pt"></div><div><b>${ESTADOS[e]}</b><small>${h ? fechaHora(h.fecha) : ''}</small></div></div>`; }).join('')}</div>`;
+    const puedeCancelar = ['pendiente_pago', 'confirmada', 'asignada', 'en_camino'].includes(r.estado);
+    const reem = d.reembolso_si_cancela;
+    $('d-contenido').innerHTML = `
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Estado del viaje</h3><span class="badge ${r.estado}">${ESTADOS[r.estado]}</span></div>${timeline}
+        ${r.estado === 'pendiente_pago' ? `<button class="btn p" onclick="irPago('${r.id}')">Pagar ahora</button>` : ''}
+        ${r.estado === 'confirmada' ? `<div class="aviso ok">Pago verificado. Te asignaremos conductor y vehículo antes del viaje.</div>` : ''}
+      </div>
+      ${d.conductor ? `<div class="card"><h3>Tu conductor</h3><div class="conductor"><div class="avatar">${esc(d.conductor.nombre[0])}</div><div style="flex:1"><b style="font-size:16px">${esc(d.conductor.nombre)}</b><br><small class="muted">⭐ ${d.conductor.calificacion} · ${d.conductor.total_viajes} viajes</small>${d.vehiculo ? `<br><small class="muted">${esc(d.vehiculo.marca)} ${esc(d.vehiculo.modelo)} ${esc(d.vehiculo.color || '')} · Placa <b>${esc(d.vehiculo.placa)}</b></small>` : ''}</div>
+        <a class="btn p chico" style="text-decoration:none" href="tel:${esc(d.conductor.telefono)}">📞</a></div></div>` : ''}
+      <div class="card"><h3>Detalles</h3>
+        <div class="kv"><span>Salida</span><b>${fechaBonita(r.fecha_viaje)} · ${horaBonita(r.hora_viaje)}</b></div>
+        <div class="kv"><span>Vehículo</span><b>${d.tipo_vehiculo.icono || ''} ${esc(d.tipo_vehiculo.nombre)}</b></div>
+        <div class="kv"><span>Pasajeros / maletas</span><b>${r.pasajeros} / ${r.equipaje}</b></div>
+        ${r.direccion_recogida ? `<div class="kv"><span>Recogida</span><b>${esc(r.direccion_recogida)}</b></div>` : ''}
+        ${r.direccion_destino ? `<div class="kv"><span>Llegada</span><b>${esc(r.direccion_destino)}</b></div>` : ''}
+        ${r.notas ? `<div class="kv"><span>Notas</span><b>${esc(r.notas)}</b></div>` : ''}
+        <div class="kv"><span>Viajan</span><b>${d.pasajeros.map(p => esc(p.nombre)).join(', ')}</b></div>
+        <div class="sep"></div>
+        <div class="kv"><span>Precio</span><b>${NF.dinero(r.precio_base)}</b></div>
+        ${r.descuento > 0 ? `<div class="kv"><span>Descuento</span><b style="color:var(--verde)">−${NF.dinero(r.descuento)}</b></div>` : ''}
+        <div class="total"><span>Total</span><b>${NF.dinero(r.precio_total)}</b></div>
+        ${d.pagos.length ? `<div class="muted">Pagos: ${d.pagos.map(p => `${METODOS[p.metodo]?.n || p.metodo} ref. ${esc(p.referencia || '')} — <b>${({ pendiente: 'pendiente', verificando: 'en verificación', aprobado: 'aprobado ✓', rechazado: 'rechazado ✗', reembolsado: 'reembolsado' })[p.estado]}</b>`).join('<br>')}</div>` : ''}
+      </div>
+      ${r.estado === 'completada' ? `<div class="card"><h3>${d.calificacion ? 'Tu calificación' : 'Califica tu viaje'}</h3>
+        <div class="estrellas" id="d-estrellas">${[1, 2, 3, 4, 5].map(n => `<span class="${n <= estado.estrellas ? 'on' : ''}" onclick="ponerEstrellas(${n})">★</span>`).join('')}</div>
+        <label>Comentario (opcional)</label><textarea id="d-comentario">${esc(d.calificacion?.comentario || '')}</textarea>
+        <div style="height:10px"></div><button class="btn p" onclick="calificar()">${d.calificacion ? 'Actualizar calificación' : 'Enviar calificación'}</button></div>` : ''}
+      ${puedeCancelar ? `<div class="card"><h3>¿Necesitas cancelar?</h3>
+        <p class="muted" style="margin-bottom:10px">${r.estado === 'pendiente_pago' ? 'Aún no has pagado; puedes cancelar sin costo.' : `Si cancelas ahora: <b>${reem.politica}</b> → reembolso de <b>${NF.dinero(reem.monto)}</b> (${reem.porcentaje}%).`}</p>
+        <button class="btn peligro" onclick="cancelar('${r.id}')">Cancelar reserva</button></div>` : ''}
+      <button class="btn s" onclick="ir('soporte')">💬 Necesito ayuda con este viaje</button>`;
+    ir('detalle');
+  });
+}
+function ponerEstrellas(n) { estado.estrellas = n; document.querySelectorAll('#d-estrellas span').forEach((s, i) => s.classList.toggle('on', i < n)); }
+async function calificar() {
+  if (!estado.estrellas) return toast('Elige de 1 a 5 estrellas');
+  await guardado(async () => {
+    await NF.rpc('calificar_viaje', { p_reserva_id: estado.reservaActual, p_puntuacion: estado.estrellas, p_comentario: $('d-comentario').value.trim() || null });
+    toast('¡Gracias por tu calificación!'); verDetalle(estado.reservaActual);
+  });
+}
+async function cancelar(id) {
+  const motivo = prompt('¿Por qué cancelas? (opcional)');
+  if (motivo === null) return;
+  await guardado(async () => {
+    const r = await NF.rpc('cancelar_reserva', { p_reserva_id: id, p_motivo: motivo || null });
+    toast(r.monto_reembolso > 0 ? `Reserva cancelada. Reembolso: ${NF.dinero(r.monto_reembolso)}` : 'Reserva cancelada');
+    verDetalle(id);
+  });
+}
+
+/* ---------- 6. soporte ---------- */
+async function cargarSoporte() {
+  await guardado(async () => {
+    const [{ data: tk }, { data: rs }] = await Promise.all([
+      sb.from('tickets_soporte').select('*').order('creado_en', { ascending: false }),
+      sb.from('reservas').select('id,codigo,fecha_viaje').order('fecha_viaje', { ascending: false }).limit(20),
+    ]);
+    $('sp-reserva').innerHTML = '<option value="">— Ninguna —</option>' + (rs || []).map(r => `<option value="${r.id}">${esc(r.codigo)} · ${fechaBonita(r.fecha_viaje)}</option>`).join('');
+    $('sp-lista').innerHTML = (tk || []).length ? tk.map(t => `<div style="padding:10px 0;border-bottom:1px solid var(--linea)">
+      <div style="display:flex;justify-content:space-between"><b>${esc(t.asunto)}</b><span class="chip">${({ abierto: '🟠 Abierto', en_proceso: '🔵 En proceso', resuelto: '🟢 Resuelto', cerrado: '⚪ Cerrado' })[t.estado]}</span></div>
+      <p class="muted" style="margin-top:4px">${esc(t.mensaje)}</p>${t.respuesta ? `<div class="aviso ok" style="margin-top:6px"><b>Respuesta:</b> ${esc(t.respuesta)}</div>` : ''}
+      <small class="muted">${fechaHora(t.creado_en)}</small></div>`).join('') : '<p class="muted">No tienes casos abiertos.</p>';
+  });
+}
+async function enviarTicket() {
+  const asunto = $('sp-asunto').value.trim(), mensaje = $('sp-msg').value.trim();
+  if (!asunto || !mensaje) return msg('sp-alert', 'Escribe el asunto y el mensaje');
+  await guardado(async () => {
+    const { error } = await sb.from('tickets_soporte').insert({ cliente_id: estado.perfil.id, reserva_id: $('sp-reserva').value || null, asunto, mensaje });
+    if (error) throw error;
+    $('sp-asunto').value = ''; $('sp-msg').value = ''; msg('sp-alert', 'Caso enviado. Te responderemos pronto.', 'ok'); cargarSoporte();
+  }, 'sp-alert');
+}
+
+/* ---------- 7. perfil ---------- */
+function cargarPerfil() {
+  const p = estado.perfil;
+  $('pf-email').textContent = p.email || ''; $('pf-nombre').value = p.nombre || ''; $('pf-apellido').value = p.apellido || '';
+  $('pf-tel').value = p.telefono || ''; $('pf-cedula').value = p.cedula || '';
+  $('pf-politica').innerHTML = estado.politicas.map(x => `• ${esc(x.nombre)}`).join('<br>') || 'Consulta con soporte.';
+}
+async function guardarPerfil() {
+  await guardado(async () => {
+    const cambios = { nombre: $('pf-nombre').value.trim(), apellido: $('pf-apellido').value.trim(), telefono: $('pf-tel').value.trim(), cedula: $('pf-cedula').value.trim() };
+    const { error } = await sb.from('perfiles').update(cambios).eq('id', estado.perfil.id);
+    if (error) throw error;
+    Object.assign(estado.perfil, cambios); $('saludo').textContent = `¡Hola, ${cambios.nombre || 'viajero'}!`;
+    msg('pf-msg', 'Perfil actualizado', 'ok');
+  }, 'pf-msg');
+}
+
+/* ---------- arranque ---------- */
+(async function init() {
+  cargando(true);
+  try {
+    // Si viene de un enlace de recuperación de contraseña
+    sb.auth.onAuthStateChange(async (evento) => {
+      if (evento === 'PASSWORD_RECOVERY') {
+        const nueva = prompt('Escribe tu nueva contraseña (mínimo 6 caracteres):');
+        if (nueva && nueva.length >= 6) { await sb.auth.updateUser({ password: nueva }); toast('Contraseña actualizada'); }
+      }
+    });
+    const s = await NF.sesion();
+    if (s) await entrar(); else ir('auth');
+  } catch (e) { console.error(e); ir('auth'); }
+  finally { cargando(false); }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
