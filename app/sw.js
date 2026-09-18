@@ -1,7 +1,7 @@
 // Service worker de Nos Fuimos: cachea la "cáscara" de la app para que abra rápido
 // y funcione offline en lo básico. Los datos siempre se piden a Supabase (red).
-const CACHE = 'nos-fuimos-v2';
-const ARCHIVOS = ['./index.html', './manifest.json', './assets/icon-192.png', './assets/logo-oscuro.jpg', './assets/isotipo.jpg', '../config.js', '../shared/supabase.js'];
+const CACHE = 'nos-fuimos-v3';
+const ARCHIVOS = ['./index.html', './manifest.json', './assets/icon-192.png', '../config.js', '../shared/supabase.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).catch(() => {}));
