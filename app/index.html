@@ -149,6 +149,20 @@
   .toast.on{opacity:1}
   .vacio{text-align:center;padding:40px 20px;color:var(--gris)}
   .vacio i{font-style:normal;font-size:48px;display:block;margin-bottom:10px}
+  .badge.confirmado{background:#DBEAFE;color:#1E40AF}.badge.recibido{background:#E0E7FF;color:#3730A3}.badge.en_ruta,.badge.llegado{background:#D1FAE5;color:#065F46}.badge.entregado{background:#F3F4F6;color:#374151}.badge.cancelado{background:#FEE2E2;color:#991B1B}
+  .modo{display:flex;background:#fff;border-radius:14px;padding:4px;box-shadow:var(--sombra)}
+  .modo button{flex:1;border:0;background:none;padding:12px;border-radius:11px;font:inherit;font-weight:800;font-size:15px;color:var(--gris);cursor:pointer}
+  .modo button.on{background:var(--azul);color:#fff}
+  .salida{display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--linea);border-radius:var(--radio);background:#fff;cursor:pointer}
+  .salida.sel{border-color:var(--celeste);box-shadow:0 0 0 4px rgba(0,147,248,.14)}
+  .salida .dia{width:56px;text-align:center;background:var(--fondo);border-radius:12px;padding:8px 4px}
+  .salida .dia b{display:block;font-size:22px;color:var(--azul);line-height:1}
+  .salida .dia small{font-size:11px;text-transform:uppercase;color:var(--gris);font-weight:800}
+  .salida .info{flex:1}.salida .info b{display:block;font-size:15px}.salida .info small{color:var(--gris);font-size:12.5px;display:block}
+  .fila3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .opcion{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--linea);border-radius:12px;background:#fff;cursor:pointer;margin-bottom:8px}
+  .opcion.sel{border-color:var(--celeste)}
+  .cotiz{background:var(--fondo);border-radius:12px;padding:12px 14px;font-size:14px}
   .chip{display:inline-flex;align-items:center;gap:6px;background:var(--fondo);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
 </style>
 </head>
@@ -200,7 +214,17 @@
       <p>Tu destino en buenas manos. Reserva el vehículo completo, sin compartir.</p>
     </div>
     <div class="contenido">
-      <div class="card">
+      <div class="modo" id="modo" style="display:none"><button class="on" onclick="modo('viaje',this)">🚗 Viajar</button><button onclick="modo('paquete',this)">📦 Enviar paquete</button></div>
+      <div class="card" id="f-paquete" style="display:none">
+        <label>Desde</label><select id="pq-origen"></select>
+        <label>Hasta</label><select id="pq-destino"></select>
+        <div class="aviso info" style="margin-top:12px" id="pq-texto"></div>
+        <div id="pq-msg" style="margin-top:10px"></div>
+        <div style="height:14px"></div>
+        <button class="btn p" onclick="verSalidas()">Ver fechas de envío →</button>
+        <p class="centro muted" style="margin-top:10px">Los paquetes viajan en camión en fechas fijas. Precio por tamaño y peso.</p>
+      </div>
+      <div class="card" id="f-viaje">
         <label>Origen</label>
         <select id="f-origen"></select>
         <label>Destino</label>
@@ -266,6 +290,63 @@
     </div>
   </section>
 
+  <!-- ================= PAQUETES: SALIDAS ================= -->
+  <section class="pantalla" id="p-salidas">
+    <div class="cab simple"><button class="atras" onclick="ir('inicio')">‹</button><div><h1>Elige la fecha de envío</h1><p id="sa-sub"></p></div></div>
+    <div class="contenido">
+      <div id="sa-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button class="btn p" id="sa-continuar" disabled onclick="irDatosPaquete()">Continuar</button>
+    </div>
+  </section>
+
+  <!-- ================= PAQUETES: DATOS ================= -->
+  <section class="pantalla" id="p-paquete">
+    <div class="cab simple"><button class="atras" onclick="ir('salidas')">‹</button><div><h1>Tu paquete</h1><p id="pd-sub"></p></div></div>
+    <div class="contenido">
+      <div class="card">
+        <h3>¿Qué envías?</h3>
+        <label>Contenido *</label><input id="pd-desc" placeholder="Ej: Ropa, documentos, repuestos">
+        <div class="fila">
+          <div><label>Cantidad de bultos</label><div class="stepper"><b id="pd-cant">1</b><div><button onclick="stepPd(-1)">−</button> <button onclick="stepPd(1)">+</button></div></div></div>
+          <div id="pd-peso-box"><label>Peso por bulto (kg) *</label><input type="number" id="pd-peso" step="0.1" inputmode="decimal" placeholder="Ej: 3.5" oninput="cotizarPaq()"></div>
+        </div>
+        <div id="pd-medidas-box"><label>Medidas por bulto en cm (largo × ancho × alto) *</label>
+          <div class="fila3"><input type="number" id="pd-l" placeholder="Largo" inputmode="numeric" oninput="cotizarPaq()"><input type="number" id="pd-a" placeholder="Ancho" inputmode="numeric" oninput="cotizarPaq()"><input type="number" id="pd-h" placeholder="Alto" inputmode="numeric" oninput="cotizarPaq()"></div></div>
+        <div class="fila">
+          <div><label>Valor declarado (USD, opcional)</label><input type="number" id="pd-valor" inputmode="decimal"></div>
+          <div><label>&nbsp;</label><label class="opcion" style="margin:0"><input type="checkbox" id="pd-fragil" style="width:auto"> Es frágil</label></div>
+        </div>
+        <div id="pd-cotiz" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h3>Remitente</h3>
+        <div class="fila"><div><label>Nombre *</label><input id="pd-rn"></div><div><label>Teléfono *</label><input type="tel" id="pd-rt"></div></div>
+      </div>
+      <div class="card">
+        <h3>Destinatario</h3>
+        <div class="fila"><div><label>Nombre *</label><input id="pd-dn" placeholder="Quien recibe"></div><div><label>Teléfono *</label><input type="tel" id="pd-dt" placeholder="0412-..."></div></div>
+        <label>Cédula (opcional)</label><input id="pd-dc" placeholder="V-12345678">
+        <label>Entrega en destino</label>
+        <div id="pd-entrega"></div>
+        <div id="pd-dir-box"><label>Dirección de entrega</label><input id="pd-dir" placeholder="Calle, edificio, referencia"></div>
+        <label>Notas (opcional)</label><textarea id="pd-notas" placeholder="Horario para recibir, referencias..."></textarea>
+      </div>
+      <div class="card">
+        <div class="total"><span>Total a pagar</span><b id="pd-total">—</b></div>
+        <p class="muted" id="pd-total-desc"></p>
+        <div id="pd-msg" style="margin-top:8px"></div>
+        <div style="height:12px"></div>
+        <button class="btn p" onclick="confirmarEnvio()">Reservar envío</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PAQUETES: DETALLE ================= -->
+  <section class="pantalla" id="p-envio">
+    <div class="cab simple"><button class="atras" onclick="ir('viajes')">‹</button><div><h1 id="en-codigo">NP-</h1><p id="en-ruta"></p></div></div>
+    <div class="contenido" id="en-contenido"></div>
+  </section>
+
   <!-- ================= PAGO ================= -->
   <section class="pantalla" id="p-pago">
     <div class="cab simple"><button class="atras" onclick="ir('viajes')">‹</button><div><h1>Pago</h1><p id="pg-sub"></p></div></div>
@@ -298,7 +379,7 @@
         <div class="codigo" id="ex-codigo">NF-XXXXXX</div>
         <div id="ex-detalle" style="width:100%;margin-top:6px"></div>
       </div>
-      <button class="btn p" onclick="verDetalle(estado.reservaActual)">Ver mi reserva</button>
+      <button class="btn p" id="ex-ver" onclick="verDetalle(estado.reservaActual)">Ver mi reserva</button>
       <button class="btn s" onclick="ir('inicio')">Volver al inicio</button>
     </div>
   </section>
@@ -311,6 +392,7 @@
         <button class="on" onclick="tabViajes('proximos',this)">Próximos</button>
         <button onclick="tabViajes('curso',this)">En curso</button>
         <button onclick="tabViajes('historial',this)">Historial</button>
+        <button onclick="tabViajes('paquetes',this)">📦 Paquetes</button>
       </div>
       <div id="vj-lista" style="display:flex;flex-direction:column;gap:10px"></div>
     </div>
@@ -360,7 +442,7 @@
         <div id="pf-politica" class="muted"></div>
       </div>
       <button class="btn peligro" onclick="salir()">Cerrar sesión</button>
-      <p class="centro muted">Nos Fuimos · Tu destino en buenas manos · v1.1</p>
+      <p class="centro muted">Nos Fuimos · Tu destino en buenas manos · v1.2</p>
     </div>
   </section>
 
@@ -390,12 +472,15 @@ const estado = {
   cupon: { codigo: '', descuento: 0, msg: '' },
   reservaActual: null, tabViajes: 'proximos', reservas: [],
   estrellas: 0,
+  modo: 'viaje', paq: { origen_id: null, destino_id: null, salidas: [], salida: null, cotiz: null, entrega: 'domicilio' }, envios: [],
 };
 const ESTADOS = {
   pendiente_pago: 'Pendiente de pago', confirmada: 'Confirmada', asignada: 'Conductor asignado',
   en_camino: 'Conductor en camino', en_curso: 'En viaje', completada: 'Completado',
   cancelada_cliente: 'Cancelada', cancelada_admin: 'Cancelada por Nos Fuimos', no_show: 'No se presentó',
 };
+const EST_ENVIO = { pendiente_pago: 'Pendiente de pago', confirmado: 'Confirmado · lleva tu paquete', recibido: 'Paquete recibido', en_ruta: 'En camino', llegado: 'Llegó a destino', entregado: 'Entregado', cancelado: 'Cancelado' };
+const ORDEN_ENVIO = ['pendiente_pago', 'confirmado', 'recibido', 'en_ruta', 'llegado', 'entregado'];
 const METODOS = {
   pago_movil: { n: 'Pago Móvil', i: '📱' }, transferencia: { n: 'Transferencia bancaria', i: '🏦' },
   zelle: { n: 'Zelle', i: '💵' }, efectivo: { n: 'Efectivo al conductor', i: '💰' },
@@ -492,6 +577,10 @@ async function cargarCatalogos() {
   $('f-origen').innerHTML = estado.ciudades.filter(x => origenes.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
   actualizarDestinos();
   $('f-origen').onchange = actualizarDestinos;
+  const cp = estado.config.paquetes || {};
+  $('modo').style.display = cp.activo === false ? 'none' : '';
+  $('pq-origen').innerHTML = $('f-origen').innerHTML; $('pq-origen').onchange = actualizarDestinosPaq; actualizarDestinosPaq();
+  $('pq-texto').textContent = cp.texto_cliente || 'Lleva tu paquete al punto de recepción antes de la hora límite de la salida que elijas.';
   $('f-fecha').min = hoyISO();
   if (!$('f-fecha').value) { const d = new Date(); d.setDate(d.getDate() + 1); $('f-fecha').value = d.toISOString().slice(0, 10); }
   const wa = (estado.config.whatsapp_soporte || '').replace(/\D/g, '');
@@ -595,6 +684,7 @@ async function confirmarReserva() {
       p_notas: $('r-notas').value.trim() || null, p_cupon: estado.cupon.codigo || null, p_pasajeros_json: pasajeros,
     });
     estado.reservaActual = r.id;
+    exitoVerBtn('reserva');
     $('ex-titulo').textContent = '¡Reserva creada!';
     $('ex-texto').textContent = 'Guarda tu código. Ahora realiza el pago para confirmarla.';
     $('ex-codigo').textContent = r.codigo;
@@ -609,11 +699,11 @@ async function confirmarReserva() {
 }
 
 /* ---------- 3. pago ---------- */
-let pagoCtx = { reserva: null, metodo: null };
+let pagoCtx = { reserva: null, metodo: null, tipo: 'reserva' };
 async function irPago(reservaId) {
   await guardado(async () => {
     const d = await NF.rpc('detalle_reserva', { p_reserva_id: reservaId });
-    pagoCtx = { reserva: d.reserva, metodo: null };
+    pagoCtx = { reserva: d.reserva, metodo: null, tipo: 'reserva' };
     $('pg-sub').textContent = `${d.reserva.codigo} · ${NF.dinero(d.reserva.precio_total)}`;
     $('pg-monto').value = d.reserva.precio_total; $('pg-ref').value = ''; msg('pg-msg', '');
     const metodos = estado.config.metodos_pago || ['pago_movil', 'transferencia', 'zelle', 'efectivo'];
@@ -636,23 +726,191 @@ async function reportarPago() {
   const ref = $('pg-ref').value.trim(), monto = +$('pg-monto').value;
   if (!ref || !(monto > 0)) return msg('pg-msg', 'Escribe la referencia y el monto');
   await guardado(async () => {
-    await NF.rpc('registrar_pago', { p_reserva_id: pagoCtx.reserva.id, p_metodo: pagoCtx.metodo, p_referencia: ref, p_monto: monto });
+    if (pagoCtx.tipo === 'envio') await NF.rpc('registrar_pago_envio', { p_envio_id: pagoCtx.reserva.id, p_metodo: pagoCtx.metodo, p_referencia: ref, p_monto: monto });
+    else await NF.rpc('registrar_pago', { p_reserva_id: pagoCtx.reserva.id, p_metodo: pagoCtx.metodo, p_referencia: ref, p_monto: monto });
     estado.reservaActual = pagoCtx.reserva.id;
     $('ex-titulo').textContent = '¡Pago reportado!';
-    $('ex-texto').textContent = 'Lo verificamos en breve y te confirmamos el viaje. Tu código:';
+    $('ex-texto').textContent = pagoCtx.tipo === 'envio' ? 'Lo verificamos en breve. Cuando esté confirmado, lleva tu paquete al punto de recepción antes de la hora límite. Tu código:' : 'Lo verificamos en breve y te confirmamos el viaje. Tu código:';
     $('ex-codigo').textContent = pagoCtx.reserva.codigo;
     $('ex-detalle').innerHTML = '';
+    exitoVerBtn(pagoCtx.tipo);
     ir('exito');
   }, 'pg-msg');
+}
+
+
+/* ---------- PAQUETES ---------- */
+function exitoVerBtn(tipo) { const b = $('ex-ver'); b.textContent = tipo === 'envio' ? 'Ver mi envío' : 'Ver mi reserva'; b.onclick = () => tipo === 'envio' ? verEnvio(estado.reservaActual) : verDetalle(estado.reservaActual); }
+function modo(m, btn) {
+  estado.modo = m; document.querySelectorAll('#modo button').forEach(b => b.classList.toggle('on', b === btn));
+  $('f-viaje').style.display = m === 'viaje' ? '' : 'none'; $('f-paquete').style.display = m === 'paquete' ? '' : 'none';
+}
+function actualizarDestinosPaq() {
+  const o = +$('pq-origen').value;
+  const destinos = estado.rutas.filter(x => x.origen_id === o).map(x => x.destino_id);
+  $('pq-destino').innerHTML = estado.ciudades.filter(x => destinos.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
+}
+const critPaq = () => (estado.config.paquetes || {}).criterio || 'ambos';
+const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'], MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+async function verSalidas() {
+  const o = +$('pq-origen').value, d = +$('pq-destino').value;
+  if (!o || !d) return msg('pq-msg', 'Elige origen y destino');
+  await guardado(async () => {
+    const salidas = await NF.rpc('salidas_disponibles', { p_origen_id: o, p_destino_id: d });
+    if (!salidas.length) throw new Error('Por ahora no hay fechas de envío programadas para esta ruta. Escríbenos por WhatsApp.');
+    estado.paq = { ...estado.paq, origen_id: o, destino_id: d, salidas, salida: null, cotiz: null };
+    msg('pq-msg', ''); pintarSalidas(); ir('salidas');
+  }, 'pq-msg');
+}
+function pintarSalidas() {
+  const p = estado.paq;
+  $('sa-sub').textContent = `${nombreCiudad(p.origen_id)} → ${nombreCiudad(p.destino_id)} · en camión`;
+  $('sa-lista').innerHTML = p.salidas.map(s => { const f = new Date(s.fecha + 'T12:00'); const lleno = s.cupos_paquetes !== null && s.cupos_paquetes <= 0; return `
+    <div class="salida ${p.salida && p.salida.salida_id === s.salida_id ? 'sel' : ''} ${lleno ? 'no' : ''}" onclick="elegirSalida(${s.salida_id})" ${lleno ? 'style="opacity:.5"' : ''}>
+      <div class="dia"><small>${DIAS[f.getDay()]}</small><b>${f.getDate()}</b><small>${MESES[f.getMonth()]}</small></div>
+      <div class="info"><b>Sale ${horaBonita(s.hora_salida)}</b><small>Recibimos paquetes hasta: ${fechaHora(s.recepcion_hasta)}</small><small>📍 ${esc(s.punto_recepcion || 'Punto de recepción')}</small>${lleno ? '<small style="color:var(--rojo)">Sin cupo</small>' : s.cupos_paquetes !== null && s.cupos_paquetes < 10 ? `<small style="color:var(--amarillo)">Quedan ${s.cupos_paquetes} cupos</small>` : ''}</div>
+      <div style="font-size:26px">🚚</div>
+    </div>`; }).join('');
+  $('sa-continuar').disabled = !p.salida;
+}
+function elegirSalida(id) { const s = estado.paq.salidas.find(x => x.salida_id === id); if (!s || (s.cupos_paquetes !== null && s.cupos_paquetes <= 0)) return toast('Esta salida no tiene cupo'); estado.paq.salida = s; pintarSalidas(); }
+function irDatosPaquete() {
+  const p = estado.paq, s = p.salida, c = critPaq(), pf = estado.perfil;
+  $('pd-sub').textContent = `${nombreCiudad(p.origen_id)} → ${nombreCiudad(p.destino_id)} · sale ${fechaBonita(s.fecha)} ${horaBonita(s.hora_salida)}`;
+  $('pd-peso-box').style.display = c === 'tamano' ? 'none' : ''; $('pd-medidas-box').style.display = c === 'peso' ? 'none' : '';
+  if (!$('pd-rn').value) $('pd-rn').value = ((pf.nombre || '') + ' ' + (pf.apellido || '')).trim();
+  if (!$('pd-rt').value) $('pd-rt').value = pf.telefono || '';
+  p.entrega = s.entrega_domicilio ? 'domicilio' : 'retiro';
+  $('pd-entrega').innerHTML = (s.entrega_domicilio ? `<div class="opcion ${p.entrega === 'domicilio' ? 'sel' : ''}" onclick="entregaPaq('domicilio')"><span>🏠</span><div><b>Entrega a domicilio</b><br><small class="muted">Lo llevamos a la dirección que indiques</small></div></div>` : '') +
+    `<div class="opcion ${p.entrega === 'retiro' ? 'sel' : ''}" onclick="entregaPaq('retiro')"><span>📍</span><div><b>Retiro en punto</b><br><small class="muted">${esc(s.punto_entrega || 'Punto de entrega en ' + nombreCiudad(p.destino_id))}</small></div></div>`;
+  $('pd-dir-box').style.display = p.entrega === 'domicilio' ? '' : 'none';
+  p.cotiz = null; $('pd-cotiz').innerHTML = ''; $('pd-total').textContent = '—'; $('pd-total-desc').textContent = ''; msg('pd-msg', '');
+  cotizarPaq(); ir('paquete');
+}
+function entregaPaq(e) { estado.paq.entrega = e; document.querySelectorAll('#pd-entrega .opcion').forEach((x, i) => x.classList.toggle('sel', x.textContent.includes(e === 'domicilio' ? 'domicilio' : 'Retiro'))); $('pd-dir-box').style.display = e === 'domicilio' ? '' : 'none'; }
+function stepPd(d) { const el = $('pd-cant'); el.textContent = Math.min(20, Math.max(1, +el.textContent + d)); cotizarPaq(); }
+let cotizTimer;
+function datosPaq() { return { peso: +$('pd-peso').value || null, l: +$('pd-l').value || null, a: +$('pd-a').value || null, h: +$('pd-h').value || null, cant: +$('pd-cant').textContent }; }
+function cotizarPaq() {
+  clearTimeout(cotizTimer);
+  cotizTimer = setTimeout(async () => {
+    const d = datosPaq(), c = critPaq(), p = estado.paq;
+    const listo = (c === 'tamano' || d.peso) && (c === 'peso' || (d.l && d.a && d.h));
+    if (!listo) { p.cotiz = null; $('pd-cotiz').innerHTML = `<div class="muted">Indica ${c === 'tamano' ? 'las medidas' : c === 'peso' ? 'el peso' : 'peso y medidas'} para ver el precio.</div>`; $('pd-total').textContent = '—'; return; }
+    try {
+      const r = await NF.rpc('cotizar_paquete', { p_origen_id: p.origen_id, p_destino_id: p.destino_id, p_peso_kg: d.peso, p_largo_cm: d.l, p_ancho_cm: d.a, p_alto_cm: d.h, p_cantidad: d.cant });
+      if (!r.ok) { p.cotiz = null; $('pd-cotiz').innerHTML = `<div class="aviso error">${esc(r.mensaje)}</div>`; $('pd-total').textContent = '—'; return; }
+      p.cotiz = r;
+      $('pd-cotiz').innerHTML = `<div class="cotiz"><b>Categoría: ${esc(r.categoria)}</b>${r.descripcion ? ' · ' + esc(r.descripcion) : ''}<br>${NF.dinero(r.precio_unitario)} por bulto${d.cant > 1 ? ' × ' + d.cant : ''}${+r.precio_extra > 0 ? `<br><small class="muted">Incluye ${r.kg_extra} kg extra por bulto</small>` : ''}</div>`;
+      $('pd-total').textContent = NF.dinero(r.precio_total); $('pd-total-desc').textContent = 'Pago por adelantado. Cancelación gratis antes de entregar el paquete.';
+    } catch (e) { $('pd-cotiz').innerHTML = `<div class="aviso error">${esc(e.message)}</div>`; }
+  }, 350);
+}
+async function confirmarEnvio() {
+  const p = estado.paq, d = datosPaq();
+  if (!$('pd-desc').value.trim()) return msg('pd-msg', 'Describe el contenido del paquete');
+  if (!p.cotiz) return msg('pd-msg', 'Completa los datos del paquete para calcular el precio');
+  if (!$('pd-rn').value.trim() || !$('pd-rt').value.trim()) return msg('pd-msg', 'Completa nombre y teléfono del remitente');
+  if (!$('pd-dn').value.trim() || !$('pd-dt').value.trim()) return msg('pd-msg', 'Completa nombre y teléfono del destinatario');
+  if (p.entrega === 'domicilio' && !$('pd-dir').value.trim()) return msg('pd-msg', 'Escribe la dirección de entrega o elige retiro en punto');
+  await guardado(async () => {
+    const e = await NF.rpc('crear_envio', {
+      p_salida_id: p.salida.salida_id, p_descripcion: $('pd-desc').value.trim(),
+      p_remitente_nombre: $('pd-rn').value.trim(), p_remitente_telefono: $('pd-rt').value.trim(),
+      p_destinatario_nombre: $('pd-dn').value.trim(), p_destinatario_telefono: $('pd-dt').value.trim(),
+      p_peso_kg: d.peso, p_largo_cm: d.l, p_ancho_cm: d.a, p_alto_cm: d.h, p_cantidad: d.cant,
+      p_valor_declarado: +$('pd-valor').value || null, p_fragil: $('pd-fragil').checked,
+      p_destinatario_cedula: $('pd-dc').value.trim() || null, p_direccion_entrega: p.entrega === 'domicilio' ? $('pd-dir').value.trim() : null, p_notas: $('pd-notas').value.trim() || null,
+    });
+    estado.reservaActual = e.id; exitoVerBtn('envio');
+    $('ex-titulo').textContent = '¡Envío reservado!';
+    $('ex-texto').textContent = 'Guarda tu código. Realiza el pago para confirmarlo.';
+    $('ex-codigo').textContent = e.codigo;
+    $('ex-detalle').innerHTML = `<div class="card" style="text-align:left">
+      <div class="kv"><span>Ruta</span><b>${esc(nombreCiudad(p.origen_id))} → ${esc(nombreCiudad(p.destino_id))}</b></div>
+      <div class="kv"><span>Sale</span><b>${fechaBonita(p.salida.fecha)} · ${horaBonita(p.salida.hora_salida)}</b></div>
+      <div class="kv"><span>Entrega tu paquete antes de</span><b>${fechaHora(p.salida.recepcion_hasta)}</b></div>
+      <div class="kv"><span>Dónde</span><b>${esc(p.salida.punto_recepcion || '')}</b></div>
+      <div class="kv"><span>Total</span><b style="color:var(--celeste);font-size:18px">${NF.dinero(e.precio_total)}</b></div></div>
+      <button class="btn p" style="margin-top:12px" onclick="irPagoEnvio('${e.id}')">Pagar ahora</button>`;
+    ['pd-desc', 'pd-peso', 'pd-l', 'pd-a', 'pd-h', 'pd-valor', 'pd-dn', 'pd-dt', 'pd-dc', 'pd-dir', 'pd-notas'].forEach(i => $(i).value = ''); $('pd-cant').textContent = '1'; $('pd-fragil').checked = false;
+    ir('exito');
+  }, 'pd-msg');
+}
+async function irPagoEnvio(id) {
+  await guardado(async () => {
+    const d = await NF.rpc('detalle_envio', { p_envio_id: id });
+    pagoCtx = { reserva: d.envio, metodo: null, tipo: 'envio' };
+    $('pg-sub').textContent = `📦 ${d.envio.codigo} · ${NF.dinero(d.envio.precio_total)}`;
+    $('pg-monto').value = d.envio.precio_total; $('pg-ref').value = ''; msg('pg-msg', '');
+    const metodos = (estado.config.metodos_pago || ['pago_movil', 'transferencia', 'zelle', 'efectivo']).filter(m => m !== 'efectivo');
+    $('pg-metodos').innerHTML = metodos.map(m => `<div class="metodo" id="m-${m}" onclick="elegirMetodo('${m}')"><span class="ic">${METODOS[m]?.i || '📝'}</span><b>${METODOS[m]?.n || m}</b></div>`).join('');
+    $('pg-datos').innerHTML = ''; ir('pago');
+  });
+}
+async function cargarEnvios() {
+  await guardado(async () => {
+    estado.envios = await NF.rpc('mis_envios');
+    $('vj-lista').innerHTML = estado.envios.length ? estado.envios.map(e => `
+      <div class="card viaje" onclick="verEnvio('${e.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="badge ${e.estado}">${EST_ENVIO[e.estado]}</span><b class="muted">${esc(e.codigo)}</b></div>
+        <div class="ruta">📦 ${esc(e.origen)} <span>→</span> ${esc(e.destino)}</div>
+        <div class="meta"><span>🚚 ${fechaBonita(e.fecha)} · ${horaBonita(e.hora_salida)}</span><span>${esc(e.descripcion)} · <b>${NF.dinero(e.precio_total)}</b></span></div>
+        <div class="meta"><span>Para: ${esc(e.destinatario_nombre)}</span></div>
+        ${e.estado === 'pendiente_pago' ? `<button class="btn p chico" onclick="event.stopPropagation();irPagoEnvio('${e.id}')">Pagar ahora</button>` : ''}
+      </div>`).join('') : `<div class="vacio"><i>📦</i>Aún no has enviado paquetes.<br><br><button class="btn p chico" onclick="ir('inicio');modo('paquete',document.querySelectorAll('#modo button')[1])">Enviar un paquete</button></div>`;
+  });
+}
+async function verEnvio(id) {
+  await guardado(async () => {
+    const d = await NF.rpc('detalle_envio', { p_envio_id: id }); if (!d) throw new Error('Envío no encontrado');
+    const e = d.envio, s = d.salida; estado.reservaActual = e.id;
+    $('en-codigo').textContent = e.codigo; $('en-ruta').textContent = `📦 ${d.origen} → ${d.destino}`;
+    const idx = ORDEN_ENVIO.indexOf(e.estado);
+    const timeline = e.estado === 'cancelado'
+      ? `<div class="aviso error"><b>Cancelado</b>${e.motivo_cancelacion ? ' · ' + esc(e.motivo_cancelacion) : ''}${e.monto_reembolso > 0 ? `<br>Reembolso: ${NF.dinero(e.monto_reembolso)}` : ''}</div>`
+      : `<div class="timeline">${ORDEN_ENVIO.map((x, i) => { const h = d.historial.filter(y => y.estado === x).pop(); return `<div class="paso ${i < idx || (i === idx && x === 'entregado') ? 'hecho' : i === idx ? 'actual' : ''}"><div class="pt"></div><div><b>${EST_ENVIO[x]}</b><small>${h ? fechaHora(h.fecha) : ''}</small></div></div>`; }).join('')}</div>`;
+    const puedeCancelar = ['pendiente_pago', 'confirmado'].includes(e.estado);
+    $('en-contenido').innerHTML = `
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Estado del envío</h3><span class="badge ${e.estado}">${EST_ENVIO[e.estado]}</span></div>${timeline}
+        ${e.estado === 'pendiente_pago' ? `<button class="btn p" onclick="irPagoEnvio('${e.id}')">Pagar ahora</button>` : ''}
+        ${e.estado === 'confirmado' ? `<div class="aviso ok">Pago verificado. Lleva tu paquete a <b>${esc(s.punto_recepcion || 'nuestro punto de recepción')}</b> antes del <b>${fechaHora(s.recepcion_hasta)}</b>. Menciona tu código <b>${esc(e.codigo)}</b>.</div>` : ''}
+        ${e.estado === 'llegado' ? `<div class="aviso ok">${e.direccion_entrega ? 'Tu paquete llegó a destino y será entregado en la dirección indicada.' : 'Tu paquete llegó. El destinatario puede retirarlo en <b>' + esc(s.punto_entrega || 'el punto de entrega') + '</b> presentando el código.'}</div>` : ''}
+        ${e.estado === 'entregado' ? `<div class="aviso ok">Entregado ${e.entregado_a ? 'a <b>' + esc(e.entregado_a) + '</b>' : ''} el ${fechaHora(e.entregado_en)}.</div>` : ''}
+      </div>
+      ${d.conductor ? `<div class="card"><h3>Camión</h3><div class="conductor"><div class="avatar">🚚</div><div style="flex:1"><b style="font-size:16px">${esc(d.conductor.nombre)}</b>${d.vehiculo ? `<br><small class="muted">${esc(d.vehiculo.marca)} ${esc(d.vehiculo.modelo)} · Placa <b>${esc(d.vehiculo.placa)}</b></small>` : ''}</div><a class="btn p chico" style="text-decoration:none" href="tel:${esc(d.conductor.telefono)}">📞</a></div></div>` : ''}
+      <div class="card"><h3>Detalles</h3>
+        <div class="kv"><span>Salida</span><b>${fechaBonita(s.fecha)} · ${horaBonita(s.hora_salida)}</b></div>
+        <div class="kv"><span>Recepción hasta</span><b>${fechaHora(s.recepcion_hasta)}</b></div>
+        <div class="kv"><span>Contenido</span><b>${esc(e.descripcion)}${e.fragil ? ' · frágil' : ''}</b></div>
+        <div class="kv"><span>Categoría</span><b>${esc(d.categoria || '—')} · ${e.cantidad} bulto(s)</b></div>
+        ${e.peso_kg ? `<div class="kv"><span>Peso</span><b>${e.peso_kg} kg</b></div>` : ''}${e.largo_cm ? `<div class="kv"><span>Medidas</span><b>${e.largo_cm} × ${e.ancho_cm} × ${e.alto_cm} cm</b></div>` : ''}
+        <div class="kv"><span>Remitente</span><b>${esc(e.remitente_nombre)}</b></div>
+        <div class="kv"><span>Destinatario</span><b>${esc(e.destinatario_nombre)} · ${esc(e.destinatario_telefono)}</b></div>
+        <div class="kv"><span>Entrega</span><b>${e.direccion_entrega ? esc(e.direccion_entrega) : 'Retiro en ' + esc(s.punto_entrega || 'punto de entrega')}</b></div>
+        <div class="sep"></div>
+        <div class="total"><span>Total</span><b>${NF.dinero(e.precio_total)}</b></div>
+        ${d.pagos.length ? `<div class="muted">Pagos: ${d.pagos.map(p => `${METODOS[p.metodo]?.n || p.metodo} ref. ${esc(p.referencia || '')} — <b>${({ pendiente: 'pendiente', verificando: 'en verificación', aprobado: 'aprobado ✓', rechazado: 'rechazado ✗', reembolsado: 'reembolsado' })[p.estado]}</b>`).join('<br>')}</div>` : ''}
+      </div>
+      ${puedeCancelar ? `<div class="card"><h3>¿Necesitas cancelar?</h3><p class="muted" style="margin-bottom:10px">${e.estado === 'pendiente_pago' ? 'Aún no has pagado; puedes cancelar sin costo.' : 'Como aún no has entregado el paquete, te reembolsamos el total.'}</p><button class="btn peligro" onclick="cancelarEnvio('${e.id}')">Cancelar envío</button></div>` : ''}
+      <button class="btn s" onclick="ir('soporte')">💬 Necesito ayuda con este envío</button>`;
+    ir('envio');
+  });
+}
+async function cancelarEnvio(id) {
+  const m = prompt('¿Por qué cancelas? (opcional)'); if (m === null) return;
+  await guardado(async () => { const r = await NF.rpc('cancelar_envio', { p_envio_id: id, p_motivo: m || null }); toast(r.monto_reembolso > 0 ? `Cancelado. Reembolso: ${NF.dinero(r.monto_reembolso)}` : 'Envío cancelado'); verEnvio(id); });
 }
 
 /* ---------- 4. mis viajes ---------- */
 function tabViajes(t, btn) {
   estado.tabViajes = t;
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b === btn));
+  document.querySelectorAll('#p-viajes .tabs button').forEach(b => b.classList.toggle('on', b === btn));
+  if (t === 'paquetes') return cargarEnvios();
   pintarViajes();
 }
 async function cargarViajes() {
+  if (estado.tabViajes === 'paquetes') return cargarEnvios();
   await guardado(async () => {
     const { data, error } = await sb.from('reservas')
       .select('id,codigo,estado,fecha_viaje,hora_viaje,pasajeros,precio_total,ruta_id,rutas(origen:ciudades!rutas_origen_id_fkey(nombre),destino:ciudades!rutas_destino_id_fkey(nombre)),tipos_vehiculo(nombre,icono)')
