@@ -190,7 +190,7 @@
 
     <!-- PAQUETES -->
     <section class="seccion" id="s-paquetes">
-      <h1>Traslado de paquetes</h1><p class="sub">Envíos, salidas de camiones en fechas fijas y tarifas por tamaño/peso</p>
+      <h1>Traslado de paquetes</h1><p class="sub">Envíos, salidas programadas en cualquier vehículo (carro, camioneta, van o camión) y tarifas por tamaño/peso. Un mismo vehículo puede llevar pasajeros y paquetes.</p>
       <div class="tabs"><button class="on" onclick="tabPaq('envios',this)">Envíos</button><button onclick="tabPaq('salidas',this)">Salidas programadas</button><button onclick="tabPaq('tarifas',this)">Tarifas y criterio</button></div>
 
       <!-- Envíos -->
@@ -202,20 +202,20 @@
             <div><label>Salida</label><select id="pf-salida" onchange="pintarEnvios()"><option value="">Todas</option></select></div>
             <button class="btn s" onclick="cargarPaquetes()">↻ Actualizar</button>
           </div>
-          <div style="overflow:auto"><table><thead><tr><th>Código</th><th>Ruta / salida</th><th>Paquete</th><th>Remitente</th><th>Destinatario</th><th>Total</th><th>Pago</th><th>Estado</th></tr></thead><tbody id="envios-tbody"></tbody></table></div>
+          <div style="overflow:auto"><table><thead><tr><th>Código</th><th>Ruta / salida</th><th>Paquete</th><th>Remitente</th><th>Destinatario</th><th>Vehículo / conductor</th><th>Total</th><th>Pago</th><th>Estado</th></tr></thead><tbody id="envios-tbody"></tbody></table></div>
         </div>
       </div>
 
       <!-- Salidas -->
       <div id="paq-salidas" style="display:none">
-        <div class="card"><h3>Programar salida de camión</h3>
-          <p class="muted" style="margin-bottom:6px">Solo en estas fechas los clientes podrán enviar paquetes. La recepción cierra automáticamente las horas que indiques antes de la salida.</p>
+        <div class="card"><h3>Programar salida de paquetes</h3>
+          <p class="muted" style="margin-bottom:6px">Solo en estas fechas los clientes podrán enviar paquetes. La recepción cierra automáticamente las horas que indiques antes de la salida. Puedes asignar cualquier vehículo (o dejarlo sin asignar y asignar cada paquete después, incluso a un viaje de pasajeros).</p>
           <div class="fila">
             <div><label>Ruta *</label><select id="sa-ruta"></select></div>
             <div><label>Fecha *</label><input type="date" id="sa-fecha"></div>
             <div><label>Hora de salida</label><input type="time" id="sa-hora" value="08:00"></div>
             <div><label>Cierre de recepción (horas antes)</label><input type="number" id="sa-cierre" value="3" min="0"></div>
-            <div><label>Camión / conductor</label><select id="sa-veh"><option value="">— Sin asignar —</option></select></div>
+            <div><label>Vehículo / conductor</label><select id="sa-veh"><option value="">— Sin asignar —</option></select></div>
             <div><label>Capacidad (kg)</label><input type="number" id="sa-kg" placeholder="Vacío = sin límite"></div>
             <div><label>Capacidad (paquetes)</label><input type="number" id="sa-cant" placeholder="Vacío = sin límite"></div>
             <div><label>Repetir semanalmente</label><select id="sa-rep"><option value="1">Solo esta fecha</option><option value="4">4 semanas</option><option value="8">8 semanas</option><option value="12">12 semanas</option></select></div>
@@ -230,7 +230,7 @@
         </div>
         <div class="card">
           <div class="tabs" style="margin-bottom:10px"><button class="on" onclick="filtroSalidas('proximas',this)">Próximas</button><button onclick="filtroSalidas('todas',this)">Todas</button></div>
-          <div style="overflow:auto"><table><thead><tr><th>Fecha</th><th>Ruta</th><th>Recepción hasta</th><th>Camión / conductor</th><th>Carga</th><th>Ingresos</th><th>Estado</th><th></th></tr></thead><tbody id="salidas-tbody"></tbody></table></div>
+          <div style="overflow:auto"><table><thead><tr><th>Fecha</th><th>Ruta</th><th>Recepción hasta</th><th>Vehículo / conductor</th><th>Carga</th><th>Ingresos</th><th>Estado</th><th></th></tr></thead><tbody id="salidas-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -454,14 +454,16 @@ async function verReserva(id) {
     const d = await NF.rpc('detalle_reserva', { p_reserva_id: id }); const r = d.reserva;
     const conds = (r.estado === 'confirmada' || r.estado === 'asignada') ? await q(sb.from('vehiculos').select('id,marca,modelo,placa,capacidad_pasajeros,tipo_vehiculo_id,conductores(id,nombre,telefono,estado,activo)').eq('activo', true).eq('tipo_vehiculo_id', r.tipo_vehiculo_id)) : [];
     const opciones = conds.filter(v => v.conductores && v.conductores.estado === 'aprobado' && v.capacidad_pasajeros >= r.pasajeros);
+    const paqs = await q(sb.from('v_envios_admin').select('id,codigo,estado,descripcion,destinatario_nombre').eq('reserva_id', id));
     modal(`<h2>${esc(r.codigo)} ${badge(r.estado, ESTADOS[r.estado])}<button class="x" onclick="cerrarModal()">×</button></h2>
       <div class="grid2">
         <div>
           <div class="kv"><span>Ruta</span><b>${esc(d.origen)} → ${esc(d.destino)}</b></div>
           <div class="kv"><span>Salida</span><b>${fecha(r.fecha_viaje)} · ${hora(r.hora_viaje)}</b></div>
           <div class="kv"><span>Vehículo</span><b>${esc(d.tipo_vehiculo.nombre)} · ${r.pasajeros} pax · ${r.equipaje} maletas</b></div>
-          <div class="kv"><span>Recogida</span><b>${esc(r.direccion_recogida || '—')}</b></div>
-          <div class="kv"><span>Llegada</span><b>${esc(r.direccion_destino || '—')}</b></div>
+          <div class="kv"><span>Recogida</span><b>${esc(r.direccion_recogida || (r.recogida_lat != null ? 'Ubicación GPS' : '—'))}${gpsLink(r.recogida_lat, r.recogida_lng)}</b></div>
+          <div class="kv"><span>Llegada</span><b>${esc(r.direccion_destino || (r.destino_lat != null ? 'Ubicación GPS' : '—'))}${gpsLink(r.destino_lat, r.destino_lng)}</b></div>
+          ${paqs.length ? `<div class="kv"><span>📦 Paquetes en este viaje</span><b>${paqs.map(p => `<a href="#" onclick="event.preventDefault();verEnvio('${p.id}')">${esc(p.codigo)}</a> (${EST_ENVIO[p.estado]})`).join(', ')}</b></div>` : ''}
           <div class="kv"><span>Notas</span><b>${esc(r.notas || '—')}</b></div>
           <div class="kv"><span>Pasajeros</span><b>${d.pasajeros.map(p => esc(p.nombre) + (p.cedula ? ' (' + esc(p.cedula) + ')' : '')).join(', ')}</b></div>
           <div class="kv"><span>Precio</span><b>${NF.dinero(r.precio_base)}${r.descuento > 0 ? ' − ' + NF.dinero(r.descuento) + ' = <span style="color:var(--celeste)">' + NF.dinero(r.precio_total) + '</span>' : ''}</b></div>
@@ -622,9 +624,8 @@ async function cargarPaquetes() {
     pintarEnvios();
   } else if (E.tabPaq === 'salidas') {
     E.salidas = await q(sb.from('v_salidas_admin').select('*').order('fecha').order('hora_salida'));
-    const camiones = await q(sb.from('vehiculos').select('id,marca,modelo,placa,conductor_id,tipo_vehiculo_id,conductores(id,nombre,estado)').eq('activo', true));
-    const tiposPaq = E.tipos.filter(t => t.uso === 'paquetes').map(t => t.id);
-    $('sa-veh').innerHTML = '<option value="">— Sin asignar —</option>' + camiones.filter(v => tiposPaq.includes(v.tipo_vehiculo_id)).map(v => `<option value="${v.id}|${v.conductores?.id || ''}">${esc(v.marca)} ${esc(v.modelo)} (${esc(v.placa)})${v.conductores ? ' — ' + esc(v.conductores.nombre) : ' — sin conductor'}</option>`).join('');
+    const vehs = await vehiculosParaPaquetes();
+    $('sa-veh').innerHTML = '<option value="">— Sin asignar —</option>' + vehs.map(v => `<option value="${v.id}|${v.conductores?.id || ''}">${opcionVehiculo(v)}</option>`).join('');
     if (!$('sa-ruta').options.length) $('sa-ruta').innerHTML = [...E.rutas].filter(r => r.activa).sort((a, b) => rutaNombre(a.id).localeCompare(rutaNombre(b.id))).map(r => `<option value="${r.id}">${esc(rutaNombre(r.id))}</option>`).join('');
     if (!$('sa-recep').value) $('sa-recep').value = cfgPaq().punto_recepcion || '';
     if (!$('sa-fecha').value) $('sa-fecha').value = hoyISO();
@@ -638,22 +639,35 @@ async function cargarPaquetes() {
     pintarTarifasPaq();
   }
 }
+async function vehiculosParaPaquetes() {
+  const vs = await q(sb.from('vehiculos').select('id,marca,modelo,placa,capacidad_pasajeros,conductor_id,tipo_vehiculo_id,conductores(id,nombre,estado,activo)').eq('activo', true));
+  const permitidos = E.tipos.filter(t => t.lleva_paquetes !== false).map(t => t.id);
+  return vs.filter(v => permitidos.includes(v.tipo_vehiculo_id) && v.conductores && v.conductores.estado === 'aprobado' && v.conductores.activo !== false)
+           .sort((a, b) => (a.conductores.nombre || '').localeCompare(b.conductores.nombre || ''));
+}
+const opcionVehiculo = v => `${esc(v.conductores?.nombre || 'sin conductor')} — ${tipo(v.tipo_vehiculo_id).icono || ''} ${esc(tipo(v.tipo_vehiculo_id).nombre || '')} ${esc(v.marca)} ${esc(v.modelo)} (${esc(v.placa)})`;
+const gpsLink = (lat, lng) => lat != null ? ` <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" title="Ver en el mapa" style="text-decoration:none">📍</a>` : '';
 /* envíos */
 function pintarEnvios() {
   const t = $('pf-q').value.toLowerCase(), e = $('pf-estado').value, sa = $('pf-salida').value;
   const l = E.envios.filter(x => (!e || x.estado === e) && (!sa || String(x.salida_id) === sa) && (!t || [x.codigo, x.cliente, x.cliente_telefono, x.remitente_nombre, x.destinatario_nombre, x.destinatario_telefono, x.descripcion].join(' ').toLowerCase().includes(t)));
   $('envios-tbody').innerHTML = l.length ? l.map(x => `<tr class="click" onclick="verEnvio('${x.id}')">
     <td><b>${esc(x.codigo)}</b>${x.fragil ? '<br><small style="color:var(--amarillo)">⚠ frágil</small>' : ''}</td>
-    <td>${esc(x.origen)} → ${esc(x.destino)}<br><small class="muted">🚚 ${fecha(x.fecha)} ${hora(x.hora_salida)}</small></td>
+    <td>${esc(x.origen)} → ${esc(x.destino)}<br><small class="muted">📦 ${fecha(x.fecha)} ${hora(x.hora_salida)}</small></td>
     <td>${esc(x.descripcion)}<br><small class="muted">${esc(x.categoria || '')} · ${x.cantidad} ud · ${x.peso_kg ? x.peso_kg + ' kg' : ''} ${x.largo_cm ? '· ' + x.largo_cm + '×' + x.ancho_cm + '×' + x.alto_cm + ' cm' : ''}</small></td>
     <td>${esc(x.remitente_nombre)}<br><small class="muted">${esc(x.remitente_telefono)}</small></td>
-    <td>${esc(x.destinatario_nombre)}<br><small class="muted">${esc(x.destinatario_telefono)} · ${x.direccion_entrega ? 'domicilio' : 'retiro'}</small></td>
+    <td>${esc(x.destinatario_nombre)}<br><small class="muted">${esc(x.destinatario_telefono)} · ${x.direccion_entrega ? 'domicilio' + (x.entrega_lat != null ? ' 📍GPS' : '') : 'retiro'}</small></td>
+    <td>${x.vehiculo ? esc(x.vehiculo) + '<br><small class="muted">' + esc(x.conductor || '') + (x.reserva_codigo ? ' · con viaje ' + esc(x.reserva_codigo) : '') + '</small>' : '<small class="muted">Sin asignar</small>'}</td>
     <td><b>${NF.dinero(x.precio_total)}</b></td>
-    <td>${x.estado_pago ? badge(x.estado_pago, EST_PAGO[x.estado_pago]) : '<small class="muted">sin pago</small>'}</td><td>${badge(x.estado, EST_ENVIO[x.estado])}</td></tr>`).join('') : '<tr><td colspan="8" class="vacio">Sin envíos</td></tr>';
+    <td>${x.estado_pago ? badge(x.estado_pago, EST_PAGO[x.estado_pago]) : '<small class="muted">sin pago</small>'}</td><td>${badge(x.estado, EST_ENVIO[x.estado])}</td></tr>`).join('') : '<tr><td colspan="9" class="vacio">Sin envíos</td></tr>';
 }
 async function verEnvio(id) {
   await guardado(async () => {
     const d = await NF.rpc('detalle_envio', { p_envio_id: id }); const e = d.envio, s = d.salida;
+    const asignable = !['entregado', 'cancelado'].includes(e.estado);
+    const vehs = asignable ? await vehiculosParaPaquetes() : [];
+    const viajes = asignable ? await q(sb.from('reservas').select('id,codigo,conductor_id,vehiculo_id,fecha_viaje,hora_viaje,estado,pasajeros').eq('ruta_id', e.ruta_id).in('estado', ['asignada', 'en_camino', 'en_curso']).gte('fecha_viaje', hoyISO()).order('fecha_viaje')) : [];
+    window._envioViajes = viajes;
     const sig = { confirmado: ['recibido', 'Marcar recibido en oficina'], recibido: ['en_ruta', 'Marcar en ruta'], en_ruta: ['llegado', 'Marcar llegó a destino'], llegado: ['entregado', 'Marcar entregado'] }[e.estado];
     modal(`<h2>📦 ${esc(e.codigo)} ${badge(e.estado, EST_ENVIO[e.estado])}<button class="x" onclick="cerrarModal()">×</button></h2>
       <div class="grid2">
@@ -667,7 +681,7 @@ async function verEnvio(id) {
           ${e.valor_declarado ? `<div class="kv"><span>Valor declarado</span><b>${NF.dinero(e.valor_declarado)}</b></div>` : ''}
           <div class="kv"><span>Remitente</span><b>${esc(e.remitente_nombre)} · ${esc(e.remitente_telefono)}</b></div>
           <div class="kv"><span>Destinatario</span><b>${esc(e.destinatario_nombre)} · ${esc(e.destinatario_telefono)}${e.destinatario_cedula ? ' · ' + esc(e.destinatario_cedula) : ''}</b></div>
-          <div class="kv"><span>Entrega</span><b>${e.direccion_entrega ? esc(e.direccion_entrega) : 'Retiro en ' + esc(s.punto_entrega || 'punto de entrega')}</b></div>
+          <div class="kv"><span>Entrega</span><b>${e.direccion_entrega ? esc(e.direccion_entrega) + gpsLink(e.entrega_lat, e.entrega_lng) : 'Retiro en ' + esc(s.punto_entrega || 'punto de entrega')}</b></div>
           ${e.notas ? `<div class="kv"><span>Notas</span><b>${esc(e.notas)}</b></div>` : ''}
           <div class="kv"><span>Precio</span><b>${NF.dinero(e.precio_base)}${+e.precio_extra > 0 ? ' + ' + NF.dinero(e.precio_extra) + ' kg extra' : ''} = <span style="color:var(--celeste)">${NF.dinero(e.precio_total)}</span></b></div>
           ${e.entregado_a ? `<div class="kv"><span>Entregado a</span><b>${esc(e.entregado_a)} · ${fechaHora(e.entregado_en)}</b></div>` : ''}
@@ -676,8 +690,13 @@ async function verEnvio(id) {
         <div>
           <h3 style="font-size:13px;color:var(--gris);margin-bottom:6px">PAGOS</h3>
           ${d.pagos.length ? d.pagos.map(p => `<div class="doc"><div style="flex:1"><b>${METODOS[p.metodo]}</b> · ref. ${esc(p.referencia || '—')} · ${NF.dinero(p.monto)}<br><small class="muted">${fechaHora(p.creado_en)}</small></div>${badge(p.estado, EST_PAGO[p.estado])}${p.estado === 'verificando' ? `<button class="btn ok chico" onclick="revisarPagoEnvio('${p.id}',true,'${id}')">Aprobar</button><button class="btn peligro chico" onclick="revisarPagoEnvio('${p.id}',false,'${id}')">Rechazar</button>` : ''}</div>`).join('') : '<p class="muted">Sin pagos reportados</p>'}
-          <h3 style="font-size:13px;color:var(--gris);margin:12px 0 6px">CAMIÓN</h3>
-          ${d.vehiculo ? `<div class="doc"><div style="flex:1"><b>${esc(d.vehiculo.marca)} ${esc(d.vehiculo.modelo)}</b> · ${esc(d.vehiculo.placa)}<br><small class="muted">${d.conductor ? esc(d.conductor.nombre) + ' · ' + esc(d.conductor.telefono) : ''}</small></div></div>` : '<p class="muted">Salida sin camión asignado</p>'}
+          <h3 style="font-size:13px;color:var(--gris);margin:12px 0 6px">VEHÍCULO Y CONDUCTOR</h3>
+          ${d.conductor ? `<div class="doc"><div style="flex:1"><b>${d.vehiculo ? (d.vehiculo.icono || '') + ' ' + esc(d.vehiculo.tipo || '') + ' · ' + esc(d.vehiculo.marca) + ' ' + esc(d.vehiculo.modelo) + ' · ' + esc(d.vehiculo.placa) : 'Sin vehículo'}</b><br><small class="muted">${esc(d.conductor.nombre)} · ${esc(d.conductor.telefono)}${d.viaje_vinculado ? ' · va junto al viaje <b>' + esc(d.viaje_vinculado.codigo) + '</b> (' + fecha(d.viaje_vinculado.fecha_viaje) + ' ' + hora(d.viaje_vinculado.hora_viaje) + ')' : ''}${d.conductor.compartiendo ? ' · <span style="color:var(--verde)">● GPS en vivo</span>' : ''}</small></div>${asignable ? `<button class="btn s chico" onclick="asignarEnvio('${id}', true)">Quitar</button>` : ''}</div>` : '<p class="muted">Sin vehículo asignado (el cliente aún no ve conductor)</p>'}
+          ${asignable ? `<label style="margin-top:8px">${d.conductor ? 'Reasignar a' : 'Asignar a cualquier vehículo'}</label>
+            <select id="ae-veh" onchange="viajesDelConductor()">${vehs.length ? vehs.map(v => `<option value="${v.id}|${v.conductores.id}" ${e.vehiculo_id === v.id ? 'selected' : ''}>${opcionVehiculo(v)}</option>`).join('') : '<option value="">No hay conductores aprobados con vehículo</option>'}</select>
+            <label>Llevarlo junto a un viaje de pasajeros (opcional)</label>
+            <select id="ae-viaje"><option value="">— Solo el paquete / salida programada —</option></select>
+            <div class="acciones"><button class="btn p" ${vehs.length ? '' : 'disabled'} onclick="asignarEnvio('${id}')">Asignar vehículo</button></div>` : ''}
           <h3 style="font-size:13px;color:var(--gris);margin:12px 0 6px">HISTORIAL</h3>
           <small class="muted">${d.historial.map(h => `${EST_ENVIO[h.estado]} · ${fechaHora(h.fecha)}${h.comentario ? ' · ' + esc(h.comentario) : ''}`).join('<br>')}</small>
         </div>
@@ -688,6 +707,21 @@ async function verEnvio(id) {
         <a class="btn s" href="https://wa.me/${esc(e.remitente_telefono.replace(/\D/g, '').replace(/^0/, '58'))}" target="_blank">💬 Remitente</a>
         <a class="btn s" href="https://wa.me/${esc(e.destinatario_telefono.replace(/\D/g, '').replace(/^0/, '58'))}?text=${encodeURIComponent('Hola, le escribimos de Nos Fuimos por el paquete ' + e.codigo + ' enviado por ' + e.remitente_nombre + '.')}" target="_blank">💬 Destinatario</a>
       </div>`);
+    viajesDelConductor(); if (e.reserva_id && $('ae-viaje')) $('ae-viaje').value = e.reserva_id;
+  });
+}
+function viajesDelConductor() {
+  const sel = $('ae-veh'), sv = $('ae-viaje'); if (!sel || !sv) return;
+  const con = (sel.value || '|').split('|')[1];
+  const l = (window._envioViajes || []).filter(r => r.conductor_id === con);
+  sv.innerHTML = '<option value="">— Solo el paquete / salida programada —</option>' + l.map(r => `<option value="${r.id}">${esc(r.codigo)} · ${fecha(r.fecha_viaje)} ${hora(r.hora_viaje)} · ${r.pasajeros} pax · ${ESTADOS[r.estado]}</option>`).join('');
+}
+async function asignarEnvio(id, quitar) {
+  if (quitar) { if (!confirm('¿Quitar el vehículo asignado a este paquete?')) return; return guardado(async () => { await NF.rpc('asignar_envio', { p_envio_id: id, p_conductor_id: null }); toast('Asignación eliminada'); verEnvio(id); cargarPaquetes(); }); }
+  const [veh, con] = ($('ae-veh').value || '|').split('|'); if (!veh) return;
+  await guardado(async () => {
+    await NF.rpc('asignar_envio', { p_envio_id: id, p_conductor_id: con, p_vehiculo_id: veh, p_reserva_id: $('ae-viaje').value || null });
+    toast('Vehículo asignado: el cliente ya lo ve en su envío'); verEnvio(id); cargarPaquetes();
   });
 }
 async function revisarPagoEnvio(pid, aprobar, envioId) {
@@ -709,7 +743,7 @@ function pintarSalidas() {
   $('salidas-tbody').innerHTML = l.length ? l.map(s => `<tr>
     <td><b>${fecha(s.fecha)}</b><br><small class="muted">${hora(s.hora_salida)}</small></td><td>${esc(s.origen)} → ${esc(s.destino)}</td>
     <td>${fechaHora(s.recepcion_hasta)}${new Date(s.recepcion_hasta) < new Date() && s.estado === 'programada' ? '<br><span class="badge cerrada">recepción cerrada</span>' : ''}</td>
-    <td>${s.vehiculo ? esc(s.vehiculo) + '<br><small class="muted">' + esc(s.conductor || 'sin conductor') + '</small>' : '<button class="btn s chico" onclick="asignarCamion(' + s.id + ')">Asignar camión</button>'}</td>
+    <td>${s.vehiculo ? esc(s.vehiculo) + '<br><small class="muted">' + esc(s.conductor || 'sin conductor') + '</small> <button class="btn s chico" onclick="asignarCamion(' + s.id + ')">Cambiar</button>' : '<button class="btn s chico" onclick="asignarCamion(' + s.id + ')">Asignar vehículo</button>'}</td>
     <td>${s.paquetes} paq${s.capacidad_paquetes ? ' / ' + s.capacidad_paquetes : ''}<br><small class="muted">${(+s.kg).toFixed(1)} kg${s.capacidad_kg ? ' / ' + s.capacidad_kg : ''}</small></td>
     <td>${NF.dinero(s.ingresos)}</td><td>${badge(s.estado, EST_SALIDA[s.estado])}</td>
     <td style="white-space:nowrap">${s.estado === 'programada' ? `<button class="btn s chico" onclick="estadoSalida(${s.id},'cerrada')">Cerrar recepción</button> ` : ''}${['programada', 'cerrada'].includes(s.estado) ? `<button class="btn ok chico" onclick="estadoSalida(${s.id},'en_ruta')">Salió</button> ` : ''}${s.estado === 'en_ruta' ? `<button class="btn ok chico" onclick="estadoSalida(${s.id},'completada')">Llegó</button> ` : ''}${['programada', 'cerrada'].includes(s.estado) ? `<button class="btn peligro chico" onclick="estadoSalida(${s.id},'cancelada')">✕</button>` : ''}
@@ -733,14 +767,14 @@ async function crearSalida() {
 }
 async function asignarCamion(id) {
   const opts = [...$('sa-veh').options].filter(o => o.value);
-  if (!opts.length) return toast('Registra primero un camión en Conductores');
-  const idx = prompt(opts.map((o, i) => (i + 1) + ') ' + o.textContent).join('\n') + '\n\nEscribe el número del camión:');
+  if (!opts.length) return toast('No hay conductores aprobados con vehículo');
+  const idx = prompt(opts.map((o, i) => (i + 1) + ') ' + o.textContent).join('\n') + '\n\nEscribe el número del vehículo:');
   const o = opts[+idx - 1]; if (!o) return;
   const [veh, con] = o.value.split('|');
-  await guardado(async () => { await q(sb.from('salidas_paquetes').update({ vehiculo_id: veh, conductor_id: con || null }).eq('id', id)); toast('Camión asignado'); cargarPaquetes(); });
+  await guardado(async () => { await q(sb.from('salidas_paquetes').update({ vehiculo_id: veh, conductor_id: con || null }).eq('id', id)); toast('Vehículo asignado a la salida (y a sus paquetes)'); cargarPaquetes(); });
 }
 async function estadoSalida(id, estado) {
-  const txt = { cerrada: '¿Cerrar la recepción de paquetes de esta salida?', en_ruta: '¿Marcar la salida como en ruta? Todos los paquetes recibidos pasarán a "En ruta".', completada: '¿Marcar que el camión llegó? Los paquetes pasarán a "Llegó a destino".', cancelada: '¿Cancelar esta salida? Los envíos pagados quedarán cancelados con reembolso total.' }[estado];
+  const txt = { cerrada: '¿Cerrar la recepción de paquetes de esta salida?', en_ruta: '¿Marcar la salida como en ruta? Los paquetes recibidos de esta salida pasarán a "En ruta".', completada: '¿Marcar que el vehículo llegó? Los paquetes pasarán a "Llegó a destino".', cancelada: '¿Cancelar esta salida? Los envíos pagados (sin conductor propio) quedarán cancelados con reembolso total.' }[estado];
   if (!confirm(txt)) return;
   await guardado(async () => { await NF.rpc('cambiar_estado_salida', { p_salida_id: id, p_estado: estado }); toast('Salida ' + EST_SALIDA[estado].toLowerCase()); cargarPaquetes(); contadores(); });
 }
@@ -875,7 +909,7 @@ async function cargarConfig() {
   $('cf-pm-banco').value = dp.pago_movil?.banco || ''; $('cf-pm-ced').value = dp.pago_movil?.cedula || ''; $('cf-pm-tel').value = dp.pago_movil?.telefono || '';
   $('cf-zelle').value = dp.zelle?.email || ''; $('cf-transf').value = dp.transferencia?.datos || '';
   $('pol-lista').innerHTML = E.politicas.map(p => `<div class="kv"><span>${esc(p.nombre)} — desde ${p.horas_minimas} h → ${p.porcentaje_reembolso}%</span><span><button class="btn s chico" onclick="togglePolitica(${p.id},${!p.activa})">${p.activa ? 'Activa' : 'Inactiva'}</button> <button class="btn peligro chico" onclick="borrarPolitica(${p.id})">✕</button></span></div>`).join('') || '<p class="muted">Sin reglas: no hay reembolso al cancelar.</p>';
-  $('tipos-lista').innerHTML = E.tipos.map(t => `<div class="kv"><span>${t.icono || ''} <b>${esc(t.nombre)}</b> · ${t.uso === 'paquetes' ? 'paquetes · ' + (t.capacidad_kg || '—') + ' kg' : t.capacidad_pasajeros + ' pax · ' + t.capacidad_equipaje + ' maletas'}</span><button class="btn ${t.activo ? 'ok' : 's'} chico" onclick="toggleTipo(${t.id},${!t.activo})">${t.activo ? 'Activo' : 'Inactivo'}</button></div>`).join('');
+  $('tipos-lista').innerHTML = E.tipos.map(t => `<div class="kv"><span>${t.icono || ''} <b>${esc(t.nombre)}</b> · ${t.uso === 'paquetes' ? 'solo paquetes · ' + (t.capacidad_kg || '—') + ' kg' : t.capacidad_pasajeros + ' pax · ' + t.capacidad_equipaje + ' maletas'}</span><span><button class="btn ${t.lleva_paquetes !== false ? 'ok' : 's'} chico" title="¿Puede llevar paquetes?" onclick="toggleTipoPaq(${t.id},${t.lleva_paquetes === false})">📦 ${t.lleva_paquetes !== false ? 'Lleva paquetes' : 'Sin paquetes'}</button> <button class="btn ${t.activo ? 'ok' : 's'} chico" onclick="toggleTipo(${t.id},${!t.activo})">${t.activo ? 'Activo' : 'Inactivo'}</button></span></div>`).join('');
 }
 async function guardarConfig() {
   await guardado(async () => {
@@ -888,6 +922,7 @@ async function guardarConfig() {
 async function crearPolitica() { const n = $('pol-nombre').value.trim(), h = +$('pol-h').value, p = +$('pol-p').value; if (!n || isNaN(h) || isNaN(p)) return toast('Completa nombre, horas y porcentaje'); await guardado(async () => { await q(sb.from('politicas_cancelacion').insert({ nombre: n, horas_minimas: h, porcentaje_reembolso: p })); ['pol-nombre', 'pol-h', 'pol-p'].forEach(i => $(i).value = ''); cargarConfig(); }); }
 async function togglePolitica(id, activa) { await guardado(async () => { await q(sb.from('politicas_cancelacion').update({ activa }).eq('id', id)); cargarConfig(); }); }
 async function borrarPolitica(id) { if (!confirm('¿Eliminar esta regla?')) return; await guardado(async () => { await q(sb.from('politicas_cancelacion').delete().eq('id', id)); cargarConfig(); }); }
+async function toggleTipoPaq(id, lleva) { await guardado(async () => { await q(sb.from('tipos_vehiculo').update({ lleva_paquetes: lleva }).eq('id', id)); cargarConfig(); }); }
 async function toggleTipo(id, activo) { await guardado(async () => { await q(sb.from('tipos_vehiculo').update({ activo }).eq('id', id)); cargarConfig(); }); }
 
 /* ---------- arranque ---------- */
